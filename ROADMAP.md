@@ -15,12 +15,13 @@ Make the prototype trustworthy as a foundation for a real product.
 
 Ship something installable that demonstrates the hero flow on a phone/emulator.
 
-1. Gradle wrapper + assembleDebug on a machine with Android SDK  
-2. Real mic permission + speech capture loop  
-3. Accessibility enablement UX  
-4. Device smoke: package, HOME, a11y service, RECORD_AUDIO  
-5. Outdoor flow with mock connectors but real queue → a11y handoff UX  
-6. Exact approval cards for message send / public post  
+1. [x] Gradle wrapper + assembleDebug on a machine with Android SDK  
+2. [x] Real mic permission + speech capture loop (AndroidSpeechCapture/TTS)  
+3. [ ] Accessibility enablement UX (service declared; user still enables in Settings)  
+4. [ ] Device smoke: package, HOME, a11y service, RECORD_AUDIO (needs connected device)  
+5. [x] Outdoor flow with live calendar/weather + queue → a11y handoff UX  
+6. [x] Exact approval cards for message send / public post  
+
 
 ## Then — Live Context
 

@@ -8,11 +8,15 @@ class AndroidSpeechOutput(context: Context) : SpeechOutput {
     private var activeSessionId: String = "voice"
     private var ttsReady = false
     private val pendingDeltas = mutableListOf<String>()
-    private val tts = TextToSpeech(context.applicationContext) { status ->
-        ttsReady = status == TextToSpeech.SUCCESS
-        if (ttsReady) {
-            tts.language = Locale.getDefault()
-            flushPending()
+    private lateinit var tts: TextToSpeech
+
+    init {
+        tts = TextToSpeech(context.applicationContext) { status ->
+            ttsReady = status == TextToSpeech.SUCCESS
+            if (ttsReady) {
+                tts.language = Locale.getDefault()
+                flushPending()
+            }
         }
     }
 

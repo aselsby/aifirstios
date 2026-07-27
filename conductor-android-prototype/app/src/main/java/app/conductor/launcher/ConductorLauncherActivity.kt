@@ -114,7 +114,8 @@ class ConductorLauncherActivity : ComponentActivity() {
                         appOperationExecutor = appOperationExecutor,
                         androidIntentLauncher = AndroidContextIntentLauncher(applicationContext)
                     ),
-                    recordStore = recordStore
+                    recordStore = recordStore,
+                    androidContext = applicationContext
                 )
             }
             var userPolicy by remember {
@@ -377,6 +378,29 @@ class ConductorLauncherActivity : ComponentActivity() {
                     runtimeAuditLedger.record("voice.permission_denied", "Microphone permission denied.")
                     voiceSessionController.interrupt("microphone_permission_denied")
                     decisionVersion += 1
+                }
+            }
+            val contextPermissionsLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestMultiplePermissions()
+            ) { grants ->
+                runtimeAuditLedger.record(
+                    "context.permissions_result",
+                    grants.entries.sortedBy { it.key }.joinToString(",") { "${it.key.substringAfterLast('.')}=${it.value}" }
+                )
+                decisionVersion += 1
+            }
+            androidx.compose.runtime.LaunchedEffect(Unit) {
+                val needed = listOf(
+                    Manifest.permission.READ_CALENDAR,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.READ_CONTACTS
+                ).filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
+                if (needed.isNotEmpty()) {
+                    runtimeAuditLedger.record(
+                        "context.permissions_requested",
+                        needed.joinToString(",") { it.substringAfterLast('.') }
+                    )
+                    contextPermissionsLauncher.launch(needed.toTypedArray())
                 }
             }
             val result = runtime.runMobileIntentWorkflow(
@@ -753,7 +777,7 @@ class ConductorLauncherActivity : ComponentActivity() {
                     if (requests.isEmpty()) {
                         runtimeAuditLedger.record("connector.refresh_blocked", "$source:unsupported_source")
                     } else {
-                        defaultOutdoorConnectorRuntime(runtimeAuditLedger, recordStore).hydrateGraph(
+                        defaultOutdoorConnectorRuntime(runtimeAuditLedger, recordStore, applicationContext).hydrateGraph(
                             graph = PersonalGraphStore(runtimeAuditLedger, recordStore),
                             requests = requests
                         )

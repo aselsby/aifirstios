@@ -1,103 +1,59 @@
-# Conductor OS Progress Save
+# Conductor OS Progress
 
-Saved / updated on 2026-07-27.
+Repo: https://github.com/aselsby/aifirstios  
+Updated: 2026-07-27
 
-## Objective
+## Goal
 
-Build an AI-first mobile operating layer where:
+Ship an AI-first mobile OS layer where voice + multi-app context + configurable autonomy + logged-in app agents complete real user outcomes.
 
-- Voice chat is the primary interface
-- Logged-in apps can be operated as user-granted agents
-- Autonomy is user-configurable (including exact approval for posts/sends)
-- Multi-app context (calendar, weather, Facebook/events, contacts, maps) feeds intent planning
+## Achieved
 
-See `FOUNDING.md` for locked product decisions and `ROADMAP.md` for phased exit criteria.
+### Platform
 
-## Current product direction
+- Monorepo published to GitHub (`aselsby/aifirstios`)
+- Root `npm test` verification
+- GitHub Actions CI (JS/static + Android assemble)
+- Gradle wrapper checked in
+- **Debug APK builds successfully** (`./gradlew :app:assembleDebug`)
 
-Android-first **launcher + agent runtime** (not AOSP yet). Conductor owns:
+### Honesty / control plane
 
-- Voice intent handoff
-- Cross-app context + personal graph grants
-- Autonomy policy + approvals
-- App-skill routing and accessibility-backed operation
-- Durable timelines, receipts, handoffs
+- `SystemClock` wall time
+- Production `AccessibilityQueueingLiveBridge` (no false verified app ops)
+- Recording simulation explicitly labeled
+- AccessibilityService consumes receipts + autonomy budgets after live verify
+- App skills UI grouped by package
 
-## Work completed in this save (honesty sprint)
+### Live context (hero outdoor flow)
 
-### Founder / monorepo
+- **Device calendar** free/busy via CalendarContract (permission-aware)
+- **Open-Meteo weather** live HTTP (location-aware when permitted)
+- **Device contacts** preferred-invite lookup (permission-aware)
+- Facebook/events still scaffolded pending OAuth/partner access
+- Launcher requests calendar / location / contacts permissions on first launch
 
-- Locked founding decisions in `FOUNDING.md`
-- Phased roadmap in `ROADMAP.md`
-- Root `package.json` + `scripts/verify-all.mjs` for one-command verification
+### Safety retained
 
-### Android correctness
+- Autonomy modes + exact approval for send/post
+- Purpose-scoped graph grants
+- Handoff queue for login/grants/inputs
+- Instant stop → ASK_ONLY
 
-- Added injectable `SystemClock` for wall-clock sessions, handoffs, freshness, and audit timestamps
-- Production app-operation path uses `AccessibilityQueueingLiveBridge` (queues for AccessibilityService; **does not false-verify**)
-- `RecordingAppOperationLiveBridge` explicitly labeled `recording_simulation` for tests only
-- AccessibilityService now finalizes verified ops: consumes exact-approval receipts and autonomy budgets
-- App-skills launcher surface closed: grouped by package with nested action rows
-- Static Kotlin invariants updated for App skills + live-queue honesty + SystemClock
-- Intent-aware scaffold voice responses that never claim external work completed
+## Remaining to goal
 
-### Still true from prior progress
+| Priority | Item |
+|----------|------|
+| P0 | Device install smoke on hardware/emulator; enable a11y; end-to-end outdoor demo video |
+| P0 | Realtime model websocket (token service exists; stream still scaffold) |
+| P1 | Facebook/events real connector (or alternative event source) |
+| P1 | Harden Messages/Calendar/Maps playbooks against real UI trees |
+| P2 | Room/SQLCipher store; shared JS/Android contracts package |
+| P2 | iOS companion hub (not OS claim) |
 
-- Policy engine, playbooks, teach-app path, record store, mock outdoor connectors
-- Voice capture/TTS boundaries, ephemeral token providers
-- JS package suite for policy/graph/operator/orchestrator/evals
-
-## Known incomplete / blockers
-
-| Item | Status |
-|------|--------|
-| Real Gradle build / device install | Blocked by environment (no wrapper/SDK/ADB here) |
-| Live OAuth/API connectors | Mock outdoor connectors only |
-| Realtime model websocket | Token boundary real; stream still scaffolded |
-| Room/SQLCipher production DB | Schema plan only; EncryptedSharedPreferences now |
-| Arbitrary app reliability | Label-based playbooks + teach path; not hardened on device |
-| Shared JS/Android contracts package | Still duplicated domain models |
-
-## Next best steps (ordered)
-
-1. On an Android SDK machine: add Gradle wrapper, `assembleDebug`, install, run `device_smoke_test.js --strict`
-2. Wire one real connector (device Calendar free/busy or Google OAuth)
-3. Replace canned realtime stream with provider websocket using ephemeral tokens
-4. Harden Messages draft/send playbook against a real device UI tree
-5. Extract shared action/policy contracts to stop JS/Android drift
-
-## Verification
+## Verify now
 
 ```bash
-# From this folder
 npm test
-
-# Or Android static only
-npm run test:android-static
-
-# JS packages only
-npm run test:js
+cd conductor-android-prototype && ./gradlew :app:assembleDebug
 ```
-
-Android device proof (when SDK available):
-
-```bash
-cd conductor-android-prototype
-./gradlew :app:assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-node device_smoke_test.js --strict
-```
-
-## Package map
-
-- `conductor-android-prototype/` — product surface
-- `conductor-runtime-core/` — monolithic outdoor workflow lab
-- `conductor-action-sdk/` — action manifests + policy
-- `conductor-app-operator/` — synthetic accessibility operator
-- `conductor-connectors/` — purpose-scoped connector runtime
-- `conductor-personal-graph/` — grants + redaction
-- `conductor-voice-runtime/` — voice session state machine
-- `conductor-os-orchestrator/` — JS end-to-end composition
-- `conductor-evals/` — scenario suite
-- `conductor-realtime-token-service/` — ephemeral token boundary
-- `conductor-os-simulator/` — browser demo shell

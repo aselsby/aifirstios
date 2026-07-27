@@ -1,5 +1,6 @@
 package app.conductor.context
 
+import android.content.Context
 import app.conductor.audit.AuditLedger
 import app.conductor.connectors.defaultOutdoorConnectorRuntime
 import app.conductor.connectors.outdoorPlanningRequests
@@ -14,7 +15,8 @@ import app.conductor.storage.ConductorRecordStore
 
 class MockContextBroker(
     private val auditLedger: AuditLedger,
-    private val recordStore: ConductorRecordStore? = null
+    private val recordStore: ConductorRecordStore? = null,
+    private val androidContext: Context? = null
 ) {
     fun gatherOutdoorActivityContext(task: Task, autonomyMode: AutonomyMode): ContextBundle {
         auditLedger.record(
@@ -48,7 +50,7 @@ class MockContextBroker(
         }
 
         auditLedger.record("context.cache_miss", "hydrating connectors for ${task.id}")
-        defaultOutdoorConnectorRuntime(auditLedger, recordStore).hydrateGraph(
+        defaultOutdoorConnectorRuntime(auditLedger, recordStore, androidContext).hydrateGraph(
             graph = graph,
             requests = outdoorPlanningRequests()
         )

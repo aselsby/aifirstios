@@ -1,0 +1,42 @@
+name: Conductor CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  js-and-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Verify packages and Android static gates
+        run: npm test
+        env:
+          # native preflight/device smoke exit 0 when blocked
+          CI: "true"
+
+  android-assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Write local.properties
+        working-directory: conductor-android-prototype
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+      - name: Assemble debug
+        working-directory: conductor-android-prototype
+        run: |
+          if [ -x ./gradlew ]; then
+            ./gradlew :app:assembleDebug --no-daemon
+          else
+            echo "Gradle wrapper missing" && exit 1
+          fi

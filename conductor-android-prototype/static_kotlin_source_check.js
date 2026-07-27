@@ -75,6 +75,7 @@ const androidPreferencesRecordStore = read("app/src/main/java/app/conductor/stor
 const androidRecordStoreSchema = read("app/src/main/java/app/conductor/storage/AndroidRecordStoreSchema.kt");
 const androidStoragePlan = read("app/src/main/java/app/conductor/storage/AndroidStoragePlan.kt");
 const connectorRuntime = read("app/src/main/java/app/conductor/connectors/ConnectorRuntime.kt");
+const mockOutdoorConnectors = read("app/src/main/java/app/conductor/connectors/MockOutdoorConnectors.kt");
 const contextBroker = read("app/src/main/java/app/conductor/context/MockContextBroker.kt");
 const personalGraphStore = read("app/src/main/java/app/conductor/graph/PersonalGraphStore.kt");
 const userPreferenceMemory = read("app/src/main/java/app/conductor/graph/UserPreferenceMemory.kt");
@@ -277,7 +278,7 @@ check(
 check(
   "context_broker_reuses_retained_graph_before_connectors",
   contextBroker.indexOf("val retainedContext = graph.toContextBundleForAppAgent") <
-    contextBroker.indexOf("defaultOutdoorConnectorRuntime(auditLedger, recordStore).hydrateGraph") &&
+    contextBroker.includes("defaultOutdoorConnectorRuntime(auditLedger, recordStore, androidContext).hydrateGraph") &&
     contextBroker.includes("context.restored_from_graph") &&
     contextBroker.includes("context.cache_miss") &&
     contextBroker.includes("items.keys.containsAll(requiredOutdoorContextKeys)"),
@@ -751,6 +752,22 @@ check(
     launcherActivity.includes("SystemClock.nowIso()") &&
     launcherState.includes("SystemClock.nowIso()"),
   "sessions, handoffs, freshness, and live queue expiry use wall-clock time"
+);
+check(
+  "live_device_connectors_for_outdoor_context",
+  read("app/src/main/java/app/conductor/connectors/DeviceCalendarConnector.kt").includes("class DeviceCalendarConnector") &&
+    read("app/src/main/java/app/conductor/connectors/DeviceCalendarConnector.kt").includes("CalendarContract") &&
+    read("app/src/main/java/app/conductor/connectors/OpenMeteoWeatherConnector.kt").includes("class OpenMeteoWeatherConnector") &&
+    read("app/src/main/java/app/conductor/connectors/OpenMeteoWeatherConnector.kt").includes("api.open-meteo.com") &&
+    read("app/src/main/java/app/conductor/connectors/DeviceContactsConnector.kt").includes("class DeviceContactsConnector") &&
+    mockOutdoorConnectors.includes("DeviceCalendarConnector(context)") &&
+    mockOutdoorConnectors.includes("OpenMeteoWeatherConnector(context)") &&
+    mockOutdoorConnectors.includes("DeviceContactsConnector(context)") &&
+    conductorRuntime.includes("androidContext: Context? = null") &&
+    launcherActivity.includes("androidContext = applicationContext") &&
+    launcherActivity.includes("RequestMultiplePermissions()") &&
+    launcherActivity.includes("READ_CALENDAR"),
+  "outdoor planning hydrates live device calendar, Open-Meteo weather, and contacts with permission-aware fallbacks"
 );
 check(
   "launcher_supplies_record_backed_registry_provider",
@@ -1294,7 +1311,7 @@ check(
     launcherScreen.includes("Fact expires: ${source.factExpiresAtIso}") &&
     launcherScreen.includes("Grant expires: ${source.grantExpiresAtIso}") &&
     launcherScreen.includes("OutlinedButton(onClick = { onSourceRefresh(source.source) })") &&
-    launcherActivity.includes("defaultOutdoorConnectorRuntime(runtimeAuditLedger, recordStore).hydrateGraph(") &&
+    launcherActivity.includes("defaultOutdoorConnectorRuntime(runtimeAuditLedger, recordStore, applicationContext).hydrateGraph(") &&
     launcherActivity.includes("outdoorPlanningRequests().filter { it.source == source }") &&
     launcherActivity.includes("connector.source_refreshed") &&
     launcherActivity.includes("connector.refresh_blocked"),

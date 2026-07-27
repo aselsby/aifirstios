@@ -1,5 +1,6 @@
 package app.conductor.runtime
 
+import android.content.Context
 import app.conductor.audit.AuditLedger
 import app.conductor.context.MockContextBroker
 import app.conductor.operator.accessibility.AppOperationPlaybookRegistry
@@ -13,7 +14,8 @@ class ConductorRuntime(
     private val auditLedger: AuditLedger = AuditLedger(),
     private val policyEngine: PolicyEngine = PolicyEngine(),
     private val toolRegistry: ToolRegistry = ToolRegistry(auditLedger),
-    private val recordStore: ConductorRecordStore? = null
+    private val recordStore: ConductorRecordStore? = null,
+    private val androidContext: Context? = null
 ) {
     fun runMobileIntentWorkflow(
         intentType: String,
@@ -74,7 +76,8 @@ class ConductorRuntime(
         recordStore?.saveTask(task)
         auditLedger.record("task.started", "Started ${task.id} in ${task.mode}")
 
-        val context = MockContextBroker(auditLedger, recordStore).gatherOutdoorActivityContext(task, policy.mode)
+        val context = MockContextBroker(auditLedger, recordStore, androidContext)
+            .gatherOutdoorActivityContext(task, policy.mode)
         if (context.items.isEmpty()) {
             auditLedger.record("task.context_blocked", "No cross-app context available in ${policy.mode}")
             val plan = Plan(

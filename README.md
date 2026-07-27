@@ -1,40 +1,90 @@
-# Conductor OS
+# Conductor OS (`aifirstios`)
 
-AI-first Android operating layer: **voice in, multi-app context, policy-gated action, apps as agents.**
+**AI-first Android operating layer** — voice chat, multi-app context, user-controlled autonomy, apps as agents.
 
-## Start here
+Repo: https://github.com/aselsby/aifirstios
 
-1. [FOUNDING.md](FOUNDING.md) — product bet and non-negotiables  
-2. [ROADMAP.md](ROADMAP.md) — phases and exit criteria  
-3. [PROGRESS_PLAN.md](PROGRESS_PLAN.md) — current checkpoint status  
-4. [conductor-android-prototype/README.md](conductor-android-prototype/README.md) — native surface  
+## Product promise
 
-## Hero flow
+You speak (or type) a goal:
 
-User: *“What should I do outside this afternoon and draft an invite to Maya?”*
+> “What should I do outside this afternoon and draft an invite to Maya?”
 
 Conductor:
 
-1. Classifies outdoor intent from voice/text  
-2. Gathers purpose-scoped calendar, weather, events, contacts, maps  
-3. Plans ranked option + draft invite + optional maps/calendar hold  
-4. Enforces autonomy (draft free; send/post exact-approval)  
-5. Queues live app work for AccessibilityService when the target app is open  
-6. Audits everything  
+1. Gathers **calendar** (device provider), **weather** (Open-Meteo), events, contacts, maps  
+2. Plans an outdoor option under your autonomy mode  
+3. Drafts an invite without sending  
+4. **Requires exact approval** before message send / public post  
+5. Queues live app operation for AccessibilityService (no fake verified receipts)  
+6. Audits the whole path  
 
-## Verify
+## Quick start
+
+### Requirements
+
+- Node.js ≥ 20  
+- JDK 17  
+- Android SDK (API 35) + platform-tools  
+
+### Install & verify (all packages + static gates)
 
 ```bash
 npm test
 ```
 
-Requires Node ≥ 20. Native install/device smoke remains environment-gated until Android SDK + Gradle wrapper are present.
+### Build the Android debug APK
 
-## Architecture (short)
-
+```bash
+cd conductor-android-prototype
+# one-time: point Gradle at your SDK
+echo "sdk.dir=$ANDROID_HOME" > local.properties
+./gradlew :app:assembleDebug
 ```
-Voice → Intent → Context/Graph → Planner → Policy/Approvals
-  → Tools (app operator | intents | connectors) → Audit
+
+APK:
+
+```text
+app/build/outputs/apk/debug/app-debug.apk
 ```
 
-The model never gets direct authority to act.
+### Install on a device / emulator
+
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell monkey -p app.conductor.prototype 1
+node device_smoke_test.js --strict
+```
+
+Enable **Conductor Accessibility Service** in system settings for live app operation.  
+Grant **microphone**, **calendar**, **contacts**, and **location** when prompted.
+
+## Monorepo map
+
+| Path | Role |
+|------|------|
+| `conductor-android-prototype/` | Product surface (launcher, voice, policy, app operator) |
+| `conductor-action-sdk/` | Action manifests + exact-approval policy |
+| `conductor-app-operator/` | Synthetic a11y operator lab |
+| `conductor-personal-graph/` | Purpose-scoped grants |
+| `conductor-connectors/` | Connector boundary lab |
+| `conductor-voice-runtime/` | Voice session state machine |
+| `conductor-os-orchestrator/` | JS end-to-end composition |
+| `conductor-evals/` | Scenario suite |
+| `conductor-realtime-token-service/` | Ephemeral realtime tokens |
+| `conductor-runtime-core/` | Monolithic outdoor workflow lab |
+| `conductor-os-simulator/` | Browser demo |
+
+## Docs
+
+- [FOUNDING.md](FOUNDING.md) — product decisions  
+- [ROADMAP.md](ROADMAP.md) — phases  
+- [PROGRESS_PLAN.md](PROGRESS_PLAN.md) — checkpoint status  
+
+## Safety non-negotiables
+
+- Model output is never authority to act  
+- Sensitive side effects need exact approval  
+- Production live ops queue through AccessibilityService  
+- Recording/simulation bridges are labeled and test-only  
+- Instant stop forces `ASK_ONLY` and clears app queues  

@@ -1,22 +1,25 @@
 package app.conductor.connectors
 
+import android.content.Context
 import app.conductor.graph.GraphFact
 import app.conductor.graph.GraphGrant
 import app.conductor.graph.Sensitivity
+import app.conductor.runtime.SystemClock
 import app.conductor.storage.ConductorRecordStore
 
 fun defaultOutdoorConnectorRuntime(
     auditLedger: app.conductor.audit.AuditLedger,
-    recordStore: ConductorRecordStore? = null
+    recordStore: ConductorRecordStore? = null,
+    context: Context? = null
 ): ConnectorRuntime {
     return ConnectorRuntime(
         auditLedger = auditLedger,
         recordStore = recordStore,
         connectors = listOf(
-            CalendarConnector(),
-            WeatherConnector(),
+            DeviceCalendarConnector(context),
+            OpenMeteoWeatherConnector(context),
             FacebookEventsConnector(),
-            ContactsConnector(),
+            DeviceContactsConnector(context),
             MapsConnector()
         )
     ).apply {
@@ -36,43 +39,7 @@ fun outdoorPlanningRequests(): List<ConnectorRequest> = listOf(
     ConnectorRequest("maps", "device", "activity_planning")
 )
 
-private class CalendarConnector : ConductorConnector {
-    override val source = "google_calendar"
-    override fun read(request: ConnectorRequest, credentialHandle: String): ConnectorResult =
-        result(
-            request = request,
-            fact = GraphFact(
-                id = "android_calendar_free",
-                type = "calendar_availability",
-                source = source,
-                accountId = request.accountId,
-                summary = "Free from 2:30 PM to 5:30 PM; dinner hold at 7:00 PM.",
-                redactedSummary = "Free from 2:30 PM to 5:30 PM.",
-                sensitivity = Sensitivity.PRIVATE,
-                allowedPurposes = setOf("activity_planning", "scheduling"),
-                expiresAtIso = "2026-08-26T10:45:00-05:00"
-            )
-        )
-}
-
-private class WeatherConnector : ConductorConnector {
-    override val source = "weather_provider"
-    override fun read(request: ConnectorRequest, credentialHandle: String): ConnectorResult =
-        result(
-            request = request,
-            fact = GraphFact(
-                id = "android_weather_clear",
-                type = "weather_hourly",
-                source = source,
-                accountId = request.accountId,
-                summary = "Clear after 1 PM, 78 F, low wind.",
-                sensitivity = Sensitivity.PUBLIC,
-                allowedPurposes = setOf("activity_planning"),
-                expiresAtIso = "2026-07-28T10:45:00-05:00"
-            )
-        )
-}
-
+/** Nearby events stay scaffolded until a user-connected Facebook/Graph session exists. */
 private class FacebookEventsConnector : ConductorConnector {
     override val source = "facebook_events"
     override fun read(request: ConnectorRequest, credentialHandle: String): ConnectorResult =
@@ -83,29 +50,10 @@ private class FacebookEventsConnector : ConductorConnector {
                 type = "event_candidate",
                 source = source,
                 accountId = request.accountId,
-                summary = "Outdoor Jazz At The Garden at 3:30 PM, 2.4 miles away, free.",
+                summary = "Outdoor Jazz At The Garden at 3:30 PM, 2.4 miles away, free. Nearby farmers market 4:00 PM, 1.2 miles.",
                 sensitivity = Sensitivity.PERSONAL,
                 allowedPurposes = setOf("activity_planning"),
-                expiresAtIso = "2026-07-27T17:30:00-05:00"
-            )
-        )
-}
-
-private class ContactsConnector : ConductorConnector {
-    override val source = "device_contacts"
-    override fun read(request: ConnectorRequest, credentialHandle: String): ConnectorResult =
-        result(
-            request = request,
-            fact = GraphFact(
-                id = "android_contact_maya",
-                type = "contact_preference",
-                source = source,
-                accountId = request.accountId,
-                summary = "Maya Chen prefers Messages and is often invited to outdoor events.",
-                redactedSummary = "Selected contact prefers Messages.",
-                sensitivity = Sensitivity.PRIVATE,
-                allowedPurposes = setOf("activity_planning", "messaging"),
-                expiresAtIso = "2026-08-26T10:45:00-05:00"
+                expiresAtIso = SystemClock.plusHours(8)
             )
         )
 }
@@ -120,10 +68,10 @@ private class MapsConnector : ConductorConnector {
                 type = "route_hint",
                 source = source,
                 accountId = request.accountId,
-                summary = "Outdoor Jazz At The Garden is about 12 minutes away.",
+                summary = "Top outdoor candidates are about 10-15 minutes away by car.",
                 sensitivity = Sensitivity.PERSONAL,
                 allowedPurposes = setOf("activity_planning", "navigation"),
-                expiresAtIso = "2026-07-28T10:45:00-05:00"
+                expiresAtIso = SystemClock.plusHours(8)
             )
         )
 }
@@ -138,7 +86,7 @@ private fun result(request: ConnectorRequest, fact: GraphFact): ConnectorResult 
                 source = request.source,
                 accountId = request.accountId,
                 purposes = setOf(request.purpose),
-                expiresAtIso = "2026-07-28T10:45:00-05:00"
+                expiresAtIso = SystemClock.plusHours(8)
             )
         )
     )

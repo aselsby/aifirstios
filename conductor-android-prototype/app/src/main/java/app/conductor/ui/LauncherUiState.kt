@@ -462,7 +462,7 @@ private fun List<AppAgentDiscovery>.toAppTeachDraftUi(
             exactApprovalRequired = riskLabel.requiresExactApprovalRisk(),
             sourceScopeText = sourceScopeText,
             availableSourceIds = availableSourceIds,
-            unknownSourceIds = sourceScopeText.toSourceIds() - availableSourceIds.toSet(),
+            unknownSourceIds = (sourceScopeText.toSourceIds() - availableSourceIds.toSet()).toList().sorted(),
             selectedSourceIds = sourceScopeText.toSourceIds().toList().sorted(),
             availableLabels = emptyList(),
             accountProofCandidates = emptyList(),
