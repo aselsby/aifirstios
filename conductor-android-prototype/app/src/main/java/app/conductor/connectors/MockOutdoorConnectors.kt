@@ -18,7 +18,7 @@ fun defaultOutdoorConnectorRuntime(
         connectors = listOf(
             DeviceCalendarConnector(context),
             OpenMeteoWeatherConnector(context),
-            FacebookEventsConnector(),
+            NearbyOutdoorEventsConnector(context),
             DeviceContactsConnector(context),
             MapsConnector()
         )
@@ -38,25 +38,6 @@ fun outdoorPlanningRequests(): List<ConnectorRequest> = listOf(
     ConnectorRequest("device_contacts", "device", "activity_planning"),
     ConnectorRequest("maps", "device", "activity_planning")
 )
-
-/** Nearby events stay scaffolded until a user-connected Facebook/Graph session exists. */
-private class FacebookEventsConnector : ConductorConnector {
-    override val source = "facebook_events"
-    override fun read(request: ConnectorRequest, credentialHandle: String): ConnectorResult =
-        result(
-            request = request,
-            fact = GraphFact(
-                id = "android_event_jazz",
-                type = "event_candidate",
-                source = source,
-                accountId = request.accountId,
-                summary = "Outdoor Jazz At The Garden at 3:30 PM, 2.4 miles away, free. Nearby farmers market 4:00 PM, 1.2 miles.",
-                sensitivity = Sensitivity.PERSONAL,
-                allowedPurposes = setOf("activity_planning"),
-                expiresAtIso = SystemClock.plusHours(8)
-            )
-        )
-}
 
 private class MapsConnector : ConductorConnector {
     override val source = "maps"

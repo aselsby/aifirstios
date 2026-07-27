@@ -1,8 +1,10 @@
 package app.conductor.launcher
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -454,6 +456,10 @@ class ConductorLauncherActivity : ComponentActivity() {
                         microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                         decisionVersion += 1
                     }
+                },
+                onOpenAccessibilitySettings = {
+                    runtimeAuditLedger.record("setup.accessibility_settings_opened", "User opened system accessibility settings.")
+                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                 },
                 onStopAutonomy = {
                     userPolicy = policyStore.saveMode(AutonomyMode.ASK_ONLY)

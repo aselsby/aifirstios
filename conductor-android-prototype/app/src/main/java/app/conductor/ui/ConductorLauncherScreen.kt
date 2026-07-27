@@ -40,6 +40,7 @@ fun ConductorLauncherScreen(
     state: LauncherUiState,
     onVoicePressed: () -> Unit,
     onStopAutonomy: () -> Unit,
+    onOpenAccessibilitySettings: () -> Unit = {},
     onAutonomySelected: (AutonomyMode) -> Unit,
     onAppSessionAutonomySelected: (String, AutonomyMode) -> Unit,
     onAppSessionApprovalOverrideToggled: (String, String) -> Unit,
@@ -80,6 +81,7 @@ fun ConductorLauncherScreen(
             ) {
                 HeroVoicePanel(state = state, onVoicePressed = onVoicePressed)
                 EmergencyStopRow(onStopAutonomy = onStopAutonomy)
+                SetupRow(onOpenAccessibilitySettings = onOpenAccessibilitySettings)
                 AutonomyModeRow(selected = state.autonomyMode, onAutonomySelected = onAutonomySelected)
                 AppSessionSection(
                     sessions = state.appSessions,
@@ -348,6 +350,20 @@ private fun EmergencyStopRow(onStopAutonomy: () -> Unit) {
     ) {
         OutlinedButton(onClick = onStopAutonomy) {
             Text("Stop autonomy")
+        }
+    }
+}
+
+@Composable
+private fun SetupRow(onOpenAccessibilitySettings: () -> Unit) {
+    InfoCard(title = "Make apps operable") {
+        Text(
+            "Enable Conductor Accessibility, then open a logged-in app so live playbooks can run under your autonomy rules.",
+            color = Color(0xFF475569)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedButton(onClick = onOpenAccessibilitySettings, modifier = Modifier.fillMaxWidth()) {
+            Text("Open accessibility settings")
         }
     }
 }

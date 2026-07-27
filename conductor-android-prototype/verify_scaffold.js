@@ -69,6 +69,7 @@ const requiredFiles = [
   "app/src/main/java/app/conductor/connectors/DeviceCalendarConnector.kt",
   "app/src/main/java/app/conductor/connectors/OpenMeteoWeatherConnector.kt",
   "app/src/main/java/app/conductor/connectors/DeviceContactsConnector.kt",
+  "app/src/main/java/app/conductor/connectors/NearbyOutdoorEventsConnector.kt",
   "app/src/main/java/app/conductor/policy/PolicyEngine.kt",
   "app/src/main/java/app/conductor/policy/UserPolicyStore.kt",
   "app/src/main/java/app/conductor/policy/ApprovalDecisionStore.kt",

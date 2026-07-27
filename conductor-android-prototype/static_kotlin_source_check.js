@@ -760,14 +760,19 @@ check(
     read("app/src/main/java/app/conductor/connectors/OpenMeteoWeatherConnector.kt").includes("class OpenMeteoWeatherConnector") &&
     read("app/src/main/java/app/conductor/connectors/OpenMeteoWeatherConnector.kt").includes("api.open-meteo.com") &&
     read("app/src/main/java/app/conductor/connectors/DeviceContactsConnector.kt").includes("class DeviceContactsConnector") &&
+    read("app/src/main/java/app/conductor/connectors/NearbyOutdoorEventsConnector.kt").includes("class NearbyOutdoorEventsConnector") &&
+    read("app/src/main/java/app/conductor/connectors/NearbyOutdoorEventsConnector.kt").includes("nominatim.openstreetmap.org") &&
     mockOutdoorConnectors.includes("DeviceCalendarConnector(context)") &&
     mockOutdoorConnectors.includes("OpenMeteoWeatherConnector(context)") &&
+    mockOutdoorConnectors.includes("NearbyOutdoorEventsConnector(context)") &&
     mockOutdoorConnectors.includes("DeviceContactsConnector(context)") &&
     conductorRuntime.includes("androidContext: Context? = null") &&
     launcherActivity.includes("androidContext = applicationContext") &&
     launcherActivity.includes("RequestMultiplePermissions()") &&
-    launcherActivity.includes("READ_CALENDAR"),
-  "outdoor planning hydrates live device calendar, Open-Meteo weather, and contacts with permission-aware fallbacks"
+    launcherActivity.includes("READ_CALENDAR") &&
+    launcherActivity.includes("Settings.ACTION_ACCESSIBILITY_SETTINGS") &&
+    launcherScreen.includes("Open accessibility settings"),
+  "outdoor planning hydrates live calendar, weather, nearby outdoor places, and contacts with accessibility setup affordance"
 );
 check(
   "launcher_supplies_record_backed_registry_provider",

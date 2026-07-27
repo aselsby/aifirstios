@@ -30,7 +30,8 @@ Ship an AI-first mobile OS layer where voice + multi-app context + configurable 
 - **Device calendar** free/busy via CalendarContract (permission-aware)
 - **Open-Meteo weather** live HTTP (location-aware when permitted)
 - **Device contacts** preferred-invite lookup (permission-aware)
-- Facebook/events still scaffolded pending OAuth/partner access
+- Nearby outdoor places via OpenStreetMap Nominatim (events source until Facebook OAuth)
+- Accessibility settings deep-link from launcher
 - Launcher requests calendar / location / contacts permissions on first launch
 
 ### Safety retained
