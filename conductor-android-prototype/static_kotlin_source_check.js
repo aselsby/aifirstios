@@ -278,7 +278,7 @@ check(
 check(
   "context_broker_reuses_retained_graph_before_connectors",
   contextBroker.indexOf("val retainedContext = graph.toContextBundleForAppAgent") <
-    contextBroker.includes("defaultOutdoorConnectorRuntime(auditLedger, recordStore, androidContext).hydrateGraph") &&
+    contextBroker.indexOf("defaultOutdoorConnectorRuntime(auditLedger, recordStore, androidContext).hydrateGraph") &&
     contextBroker.includes("context.restored_from_graph") &&
     contextBroker.includes("context.cache_miss") &&
     contextBroker.includes("items.keys.containsAll(requiredOutdoorContextKeys)"),
