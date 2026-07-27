@@ -83,6 +83,41 @@ fun ConductorLauncherScreen(
                 EmergencyStopRow(onStopAutonomy = onStopAutonomy)
                 SetupRow(onOpenAccessibilitySettings = onOpenAccessibilitySettings)
                 AutonomyModeRow(selected = state.autonomyMode, onAutonomySelected = onAutonomySelected)
+                // Hero outcome first: plan before app-management chrome.
+                RecommendationCard(state)
+                ContextSection(state.contextCards)
+                PlanSection(state.planSteps)
+                ApprovalSection(
+                    approvals = state.approvals,
+                    onApprovalApproved = onApprovalApproved,
+                    onApprovalDenied = onApprovalDenied
+                )
+                AppHandoffSection(
+                    handoffs = state.appHandoffs,
+                    onAppHandoffGranted = onAppHandoffGranted,
+                    onAppHandoffCancelled = onAppHandoffCancelled
+                )
+                OperationTimelineSection(state.operationTimelines)
+                AppReceiptSection(state.appReceipts)
+                SourceFreshnessSection(
+                    freshness = state.sourceFreshness,
+                    onSourceRefresh = onSourceRefresh
+                )
+                DataAccessSection(
+                    grants = state.dataGrants,
+                    connectorAccounts = state.connectorAccounts,
+                    onDataGrantRevoked = onDataGrantRevoked,
+                    onDataGrantRestored = onDataGrantRestored
+                )
+                AppAgentAccessSection(
+                    grants = state.appAgentGrants,
+                    onAppAgentGrantRevoked = onAppAgentGrantRevoked,
+                    onAppAgentGrantRestored = onAppAgentGrantRestored
+                )
+                AppCapabilitySection(
+                    appSkills = state.appSkills,
+                    onAppPlaybookGrantToggled = onAppPlaybookGrantToggled
+                )
                 AppSessionSection(
                     sessions = state.appSessions,
                     teachDraft = state.appTeachDraft,
@@ -102,40 +137,6 @@ fun ConductorLauncherScreen(
                     onTeachAppAgent = onTeachAppAgent
                 )
                 AppDiscoverySection(discoveries = state.appDiscoveries)
-                AppCapabilitySection(
-                    appSkills = state.appSkills,
-                    onAppPlaybookGrantToggled = onAppPlaybookGrantToggled
-                )
-                DataAccessSection(
-                    grants = state.dataGrants,
-                    connectorAccounts = state.connectorAccounts,
-                    onDataGrantRevoked = onDataGrantRevoked,
-                    onDataGrantRestored = onDataGrantRestored
-                )
-                AppAgentAccessSection(
-                    grants = state.appAgentGrants,
-                    onAppAgentGrantRevoked = onAppAgentGrantRevoked,
-                    onAppAgentGrantRestored = onAppAgentGrantRestored
-                )
-                SourceFreshnessSection(
-                    freshness = state.sourceFreshness,
-                    onSourceRefresh = onSourceRefresh
-                )
-                RecommendationCard(state)
-                ContextSection(state.contextCards)
-                PlanSection(state.planSteps)
-                ApprovalSection(
-                    approvals = state.approvals,
-                    onApprovalApproved = onApprovalApproved,
-                    onApprovalDenied = onApprovalDenied
-                )
-                AppHandoffSection(
-                    handoffs = state.appHandoffs,
-                    onAppHandoffGranted = onAppHandoffGranted,
-                    onAppHandoffCancelled = onAppHandoffCancelled
-                )
-                OperationTimelineSection(state.operationTimelines)
-                AppReceiptSection(state.appReceipts)
                 AuditSection(state.auditEvents)
             }
         }

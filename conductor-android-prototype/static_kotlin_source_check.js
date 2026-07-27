@@ -771,7 +771,9 @@ check(
     launcherActivity.includes("RequestMultiplePermissions()") &&
     launcherActivity.includes("READ_CALENDAR") &&
     launcherActivity.includes("Settings.ACTION_ACCESSIBILITY_SETTINGS") &&
-    launcherScreen.includes("Open accessibility settings"),
+    launcherScreen.includes("Open accessibility settings") &&
+    launcherActivity.includes("withContext(Dispatchers.Default)") &&
+    launcherActivity.includes("launcher.workflow_rendered"),
   "outdoor planning hydrates live calendar, weather, nearby outdoor places, and contacts with accessibility setup affordance"
 );
 check(

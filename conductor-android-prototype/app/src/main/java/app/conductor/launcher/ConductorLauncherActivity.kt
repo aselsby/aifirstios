@@ -5,14 +5,25 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import app.conductor.account.AccountSessionMobileAuthTokenProvider
 import app.conductor.account.RecordBackedAccountSessionStore
 import app.conductor.audit.AuditLedger
@@ -48,6 +59,7 @@ import app.conductor.storage.AndroidConductorRecordStoreFactory
 import app.conductor.tools.ToolRegistry
 import app.conductor.tools.intents.AndroidContextIntentLauncher
 import app.conductor.ui.ConductorLauncherScreen
+import app.conductor.ui.LauncherUiState
 import app.conductor.ui.toLauncherUiState
 import app.conductor.voice.AndroidSpeechOutput
 import app.conductor.voice.AndroidSpeechCapture
@@ -391,7 +403,7 @@ class ConductorLauncherActivity : ComponentActivity() {
                 )
                 decisionVersion += 1
             }
-            androidx.compose.runtime.LaunchedEffect(Unit) {
+            LaunchedEffect(Unit) {
                 val needed = listOf(
                     Manifest.permission.READ_CALENDAR,
                     Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -405,19 +417,31 @@ class ConductorLauncherActivity : ComponentActivity() {
                     contextPermissionsLauncher.launch(needed.toTypedArray())
                 }
             }
-            val result = runtime.runMobileIntentWorkflow(
-                intentType = mobileIntentType,
-                policy = userPolicy,
-                approvedApprovalIds = approvalDecisionStore.approvedIds(),
-                approvedApprovalDecisions = approvalDecisionStore.approvedDecisions(),
-                deniedApprovalIds = approvalDecisionStore.deniedIds(),
-                userId = accountSession?.userId ?: "signed_out",
-                utterance = utterance,
-                forcedPlaybookId = forcedAppPlaybookId
-            )
 
-            ConductorLauncherScreen(
-                state = result.toLauncherUiState(
+            var launcherState by remember { mutableStateOf<LauncherUiState?>(null) }
+            var workflowRunning by remember { mutableStateOf(true) }
+            LaunchedEffect(
+                decisionVersion,
+                mobileIntentType,
+                userPolicy.mode,
+                utterance,
+                forcedAppPlaybookId,
+                accountSession?.userId
+            ) {
+                workflowRunning = true
+                val result = withContext(Dispatchers.Default) {
+                    runtime.runMobileIntentWorkflow(
+                        intentType = mobileIntentType,
+                        policy = userPolicy,
+                        approvedApprovalIds = approvalDecisionStore.approvedIds(),
+                        approvedApprovalDecisions = approvalDecisionStore.approvedDecisions(),
+                        deniedApprovalIds = approvalDecisionStore.deniedIds(),
+                        userId = accountSession?.userId ?: "signed_out",
+                        utterance = utterance,
+                        forcedPlaybookId = forcedAppPlaybookId
+                    )
+                }
+                launcherState = result.toLauncherUiState(
                     queuedAppOperations = recordStore.queuedAppOperations().filterNot { queued ->
                         queued.isExpired(SystemClock.nowIso()).also { expired ->
                             if (expired) {
@@ -447,7 +471,35 @@ class ConductorLauncherActivity : ComponentActivity() {
                     teachDraftAccountProofLabel = teachDraftAccountProofLabel,
                     teachDraftRiskLabel = teachDraftRiskLabel,
                     teachDraftSourceScopeText = teachDraftSourceScopeText
-                ),
+                )
+                workflowRunning = false
+                val detail =
+                    "${result.task.intentType}:steps=${result.plan.steps.size}:context=${result.context.items.size}:rec=${result.plan.recommendation.title}"
+                runtimeAuditLedger.record("launcher.workflow_rendered", detail)
+                Log.i("ConductorOS", "workflow_rendered $detail")
+            }
+
+            val state = launcherState
+            if (state == null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        if (workflowRunning) {
+                            "Conductor is gathering calendar, weather, and nearby outdoor options…"
+                        } else {
+                            "Starting Conductor…"
+                        }
+                    )
+                }
+                return@setContent
+            }
+
+            ConductorLauncherScreen(
+                state = state,
                 onVoicePressed = {
                     if (microphonePermissionGranted) {
                         startVoiceCapture()
@@ -808,11 +860,18 @@ class ConductorLauncherActivity : ComponentActivity() {
                     }
                 },
                 onApprovalApproved = { approvalId ->
-                    val approval = result.firstPassResults
-                        .mapNotNull { it.approval }
-                        .firstOrNull { it.id == approvalId }
-                    if (approval != null) {
-                        approvalDecisionStore.approve(approval)
+                    val pending = launcherState?.approvals?.firstOrNull { it.id == approvalId }
+                    if (pending != null) {
+                        approvalDecisionStore.approve(
+                            app.conductor.runtime.ApprovalCard(
+                                id = pending.id,
+                                stepId = pending.id,
+                                actionType = pending.actionType,
+                                exactContent = pending.exactContent.ifBlank { null },
+                                recipient = null,
+                                reason = pending.reason
+                            )
+                        )
                     } else {
                         approvalDecisionStore.approve(approvalId)
                     }
@@ -1095,8 +1154,6 @@ class ConductorLauncherActivity : ComponentActivity() {
                     decisionVersion += 1
                 }
             )
-
-            decisionVersion
         }
     }
 }
