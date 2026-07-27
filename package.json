@@ -1,0 +1,15 @@
+{
+  "name": "conductor-os",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Conductor OS — AI-first Android agent operating layer monorepo checkpoint",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node scripts/verify-all.mjs",
+    "test:js": "node scripts/verify-all.mjs --js-only",
+    "test:android-static": "node scripts/verify-all.mjs --android-static-only",
+    "verify": "node scripts/verify-all.mjs"
+  }
+}

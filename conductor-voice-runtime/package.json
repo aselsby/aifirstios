@@ -1,0 +1,11 @@
+{
+  "name": "conductor-voice-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "demo": "node src/demo.mjs"
+  },
+  "description": "Voice session runtime prototype for Conductor OS."
+}

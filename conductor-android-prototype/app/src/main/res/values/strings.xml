@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Conductor</string>
+    <string name="accessibility_description">Conductor can operate whitelisted apps after explicit user approval and visible enablement.</string>
+</resources>

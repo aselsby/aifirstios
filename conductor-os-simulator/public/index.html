@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conductor OS Simulator</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="phone">
+      <header class="status"><span>10:45</span><span>Conductor</span><span>86%</span></header>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">AI mobile operating layer</p>
+          <h1>Conductor OS</h1>
+        </div>
+        <button id="listenButton" class="voice" aria-label="Start voice input" title="Start voice input"></button>
+      </section>
+
+      <section class="controls">
+        <label for="modeSelect">Autonomy</label>
+        <select id="modeSelect">
+          <option value="ask_only">Ask Only</option>
+          <option value="draft_only" selected>Draft Only</option>
+          <option value="low_risk_auto">Low-Risk Auto</option>
+          <option value="trusted_auto">Trusted Auto</option>
+        </select>
+      </section>
+
+      <section class="ask">
+        <p id="transcript">Ask Conductor to do something across your apps.</p>
+        <div class="prompt">
+          <input id="promptInput" value="Find me something outdoors to do this afternoon and invite Maya if it fits.">
+          <button id="runButton">Run</button>
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="App views">
+        <button data-tab="today" class="active">Today</button>
+        <button data-tab="apps">Apps</button>
+        <button data-tab="approvals">Approvals</button>
+        <button data-tab="audit">Audit</button>
+      </nav>
+
+      <section id="view" class="view"></section>
+    </section>
+
+    <aside class="desk">
+      <h2>What this proves</h2>
+      <p>The simulator shows the OS-level loop: intent, cross-app context, plan, autonomy policy, app execution, approvals, and audit. Voice is a first-class input when the browser supports speech recognition; text drives the same runtime.</p>
+      <div class="grid">
+        <div><strong>Context</strong><span>Calendar, weather, Facebook-style events, contacts, messages, maps.</span></div>
+        <div><strong>Control</strong><span>Ask, Draft, Low-Risk, and Trusted modes change what can happen.</span></div>
+        <div><strong>Safety</strong><span>Outbound messages pause with exact content before sending.</span></div>
+        <div><strong>Agency</strong><span>Apps are treated as tools in a task plan, not destinations.</span></div>
+      </div>
+    </aside>
+  </main>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "conductor-realtime-token-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "demo": "node src/demo.mjs",
+    "start": "node src/server.mjs"
+  },
+  "description": "Ephemeral realtime session token service prototype for Conductor OS voice."
+}

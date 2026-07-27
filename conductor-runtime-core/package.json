@@ -1,0 +1,14 @@
+{
+  "name": "conductor-runtime-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dependency-free core runtime scaffold for Conductor OS agent planning, policy, approvals, and audited execution.",
+  "type": "module",
+  "scripts": {
+    "start": "node src/demo.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

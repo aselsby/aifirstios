@@ -1,0 +1,11 @@
+{
+  "name": "conductor-action-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "demo": "node src/demo.mjs"
+  },
+  "description": "Structured app action SDK prototype for Conductor OS."
+}
