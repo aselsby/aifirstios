@@ -1341,7 +1341,7 @@ check(
     launcherState.includes("val exactApprovalRequired: Boolean") &&
     launcherState.includes("availableSourceIds = (graphGrants.map { it.source } + connectorAccounts.map { it.source }).toSet().sorted()") &&
     launcherState.includes("private fun List<AppAgentDiscovery>.toAppTeachDraftUi(") &&
-    launcherState.includes("unknownSourceIds = sourceScopeText.toSourceIds() - availableSourceIds.toSet()") &&
+    launcherState.includes("unknownSourceIds = (sourceScopeText.toSourceIds() - availableSourceIds.toSet()).toList().sorted()") &&
     launcherState.includes("selectedSourceIds = sourceScopeText.toSourceIds().toList().sorted()") &&
     launcherState.includes("accountProofCandidates = discovery.accountProofCandidates.toList().sorted()") &&
     launcherState.includes("riskLabel = riskLabel.ifBlank { \"low_reversible\" }") &&
