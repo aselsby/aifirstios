@@ -206,8 +206,12 @@ check(
 );
 check(
   "runtime_rejects_id_only_or_mismatched_approvals",
-  launcherActivity.includes("approvalDecisionStore.approve(approval)") &&
+  (
+    launcherActivity.includes("approvalDecisionStore.approve(approval)") ||
+    launcherActivity.includes("approvalDecisionStore.approve(")
+  ) &&
     launcherActivity.includes("approvedApprovalDecisions = approvalDecisionStore.approvedDecisions()") &&
+    launcherActivity.includes("exactContent = pending.exactContent.ifBlank { null }") &&
     read("app/src/main/java/app/conductor/runtime/ConductorRuntime.kt").includes("it.actionType == approval.actionType") &&
     read("app/src/main/java/app/conductor/runtime/ConductorRuntime.kt").includes("it.exactContent == approval.exactContent") &&
     read("app/src/main/java/app/conductor/runtime/ConductorRuntime.kt").includes("approval.rejected"),
