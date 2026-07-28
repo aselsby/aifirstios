@@ -546,11 +546,22 @@ class RecordBackedAppOperationSourceAuthorizer(
 ) : AppOperationSourceAuthorizer {
     override fun unauthorizedSourceIds(packageName: String, requiredSourceIds: Set<String>): Set<String> {
         if (requiredSourceIds.isEmpty()) return emptySet()
+        val acceptedPurposes = setOf(
+            purpose,
+            "activity_planning",
+            "messaging",
+            "scheduling",
+            "navigation",
+            "shopping",
+            "banking",
+            "web",
+            "life_ops"
+        )
         val activeBaseSources = recordStore.graphGrants()
             .filter { grant ->
                 !grant.revoked &&
                     !grant.isExpired(nowIso()) &&
-                    grant.purposes.contains(purpose)
+                    grant.purposes.any { it in acceptedPurposes }
             }
             .map { it.source }
             .toSet()
@@ -560,10 +571,11 @@ class RecordBackedAppOperationSourceAuthorizer(
                     !grant.isExpired(nowIso()) &&
                     grant.appAgentId == appAgentId &&
                     grant.packageName == packageName &&
-                    grant.purposes.contains(purpose)
+                    grant.purposes.any { it in acceptedPurposes }
             }
             .flatMap { it.sources }
             .toSet()
+        // Session-scoped allowed sources still need a base graph grant for the source.
         return requiredSourceIds
             .filter { !activeBaseSources.contains(it) || !activeSources.contains(it) }
             .toSet()

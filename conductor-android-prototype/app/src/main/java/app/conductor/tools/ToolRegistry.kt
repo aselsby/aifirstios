@@ -144,11 +144,14 @@ class ToolRegistry(
 
     private fun requiredSourceIdsFor(step: PlanStep): Set<String> =
         when (step.actionType) {
-            "outbound_message.create_draft" -> setOf("device_contacts")
-            "outbound_message.send" -> setOf("device_contacts")
+            "outbound_message.create_draft", "outbound_message.send",
+            "email.create_draft", "email.send", "contacts.lookup", "contacts.call" -> setOf("device_contacts")
             "public_post.create" -> setOf("facebook_events")
-            "calendar.hold.create" -> setOf("google_calendar")
-            "maps.route.open" -> setOf("maps")
+            "calendar.hold.create", "calendar.agenda.read" -> setOf("google_calendar")
+            "maps.route.open", "maps.place.search", "location.share" -> setOf("maps")
+            "shopping.search", "shopping.cart.add", "purchase.create" -> setOf("shopping")
+            "banking.balance.read", "banking.transfer.create", "payment.send", "wallet.cards.read" -> setOf("banking")
+            "browser.open" -> setOf("web")
             else -> step.input["__requiredSourceIds"]
                 ?.split(",")
                 ?.map { it.trim() }
@@ -161,17 +164,45 @@ class ToolRegistry(
         val agentOperatedActionTypes = setOf(
             "outbound_message.create_draft",
             "outbound_message.send",
+            "email.create_draft",
+            "email.send",
+            "contacts.lookup",
+            "contacts.call",
             "calendar.hold.create",
+            "calendar.agenda.read",
             "maps.route.open",
-            "public_post.create"
+            "maps.place.search",
+            "location.share",
+            "public_post.create",
+            "shopping.search",
+            "shopping.cart.add",
+            "purchase.create",
+            "banking.balance.read",
+            "banking.transfer.create",
+            "payment.send",
+            "wallet.cards.read",
+            "browser.open"
         )
 
         val agentOperatedToolNames = setOf(
             "messages.create_draft",
             "messages.send",
+            "email.create_draft",
+            "email.send",
+            "contacts.lookup",
+            "contacts.call",
             "calendar.create_hold",
+            "calendar.agenda",
             "maps.open_route",
-            "facebook.post"
+            "maps.search",
+            "facebook.post",
+            "shopping.search",
+            "shopping.cart",
+            "shopping.purchase",
+            "banking.balance",
+            "banking.transfer",
+            "payment.send",
+            "browser.open"
         )
     }
 }

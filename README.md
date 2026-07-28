@@ -75,6 +75,20 @@ Grant **microphone**, **calendar**, **contacts**, and **location** when prompted
 | `conductor-runtime-core/` | Monolithic outdoor workflow lab |
 | `conductor-os-simulator/` | Browser demo |
 
+## Life app subagents
+
+See [LIFE_APP_AGENTS.md](LIFE_APP_AGENTS.md) and [AGENTS.md](AGENTS.md).
+
+Domains: Messages, Calendar, Contacts, Maps, Gmail, Shopping (Amazon/Walmart/Target), Banking (Chase/BofA/PayPal/Wallet), Social, Browser.
+
+Money-moving actions always require exact approval.
+
+Demo intents via adb:
+
+```bash
+adb shell 'am start -n app.conductor.prototype/app.conductor.launcher.ConductorLauncherActivity --es conductor_intent life_shopping --es conductor_utterance "Search Amazon for headphones and add to cart"'
+```
+
 ## Docs
 
 - [FOUNDING.md](FOUNDING.md) — product decisions  

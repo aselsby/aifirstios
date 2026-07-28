@@ -102,7 +102,7 @@ export const defaultAgentSurfaces = [
     accountProofLabel: "Signed in as Alex",
     requiredSources: ["device_contacts"],
     revoked: false,
-    expiresAt: "2026-07-27T18:00:00-05:00"
+    expiresAt: "2027-07-27T18:00:00-05:00"
   },
   {
     id: "maps.agent",
@@ -115,7 +115,7 @@ export const defaultAgentSurfaces = [
     accountProofLabel: "Signed in as Alex",
     requiredSources: ["maps"],
     revoked: false,
-    expiresAt: "2026-07-27T18:00:00-05:00"
+    expiresAt: "2027-07-27T18:00:00-05:00"
   },
   {
     id: "notes.agent",
@@ -128,7 +128,7 @@ export const defaultAgentSurfaces = [
     accountProofLabel: "Signed in as Alex",
     requiredSources: [],
     revoked: false,
-    expiresAt: "2026-07-27T18:00:00-05:00"
+    expiresAt: "2027-07-27T18:00:00-05:00"
   },
   {
     id: "community.agent",
@@ -141,7 +141,7 @@ export const defaultAgentSurfaces = [
     accountProofLabel: "Signed in as Alex",
     requiredSources: ["facebook_events"],
     revoked: false,
-    expiresAt: "2026-07-27T18:00:00-05:00"
+    expiresAt: "2027-07-27T18:00:00-05:00"
   }
 ];
 
@@ -168,7 +168,7 @@ export class AppOperator {
     loginState = "logged_in",
     autonomyMode = "draft_only",
     allowedSourceIds = [],
-    expiresAt = "2026-07-27T18:00:00-05:00",
+    expiresAt = "2027-07-27T18:00:00-05:00",
     observedTree = null
   }) {
     const validation = validatePlaybook(playbook);
@@ -641,7 +641,7 @@ export function createAgentSurfaceFromPlaybook({
   loginState = "logged_in",
   autonomyMode = "draft_only",
   allowedSourceIds = [],
-  expiresAt = "2026-07-27T18:00:00-05:00"
+  expiresAt = "2027-07-27T18:00:00-05:00"
 }) {
   return {
     id: `${playbook.packageName}.agent`,

@@ -182,8 +182,12 @@ private fun AppCapabilitySection(
             }
         }
         appSkills.forEach { appSkill ->
-            InfoCard(title = appSkill.packageName) {
+            InfoCard(title = "${appSkill.displayName} · ${appSkill.domain}") {
+                Text(appSkill.packageName, color = Color(0xFF64748B))
                 StatusText("${appSkill.readyActionCount}/${appSkill.actionCount} actions ready")
+                if (appSkill.moneyMoving) {
+                    Text("Money-moving skill — exact approval required", color = Color(0xFF9A5B00))
+                }
                 Text("Enabled actions: ${appSkill.enabledActionCount}", color = Color(0xFF475569))
                 if (appSkill.blockedReasons.isNotEmpty()) {
                     Text("Needs attention: ${appSkill.blockedReasons.joinToString()}", color = Color(0xFF9A5B00))
@@ -1045,6 +1049,9 @@ private fun ConductorLauncherScreenPreview() {
             appSkills = listOf(
                 AppSkillUi(
                     packageName = "com.google.android.apps.messaging",
+                    domain = "Messages",
+                    displayName = "Messages",
+                    moneyMoving = false,
                     actionCount = 1,
                     enabledActionCount = 1,
                     readyActionCount = 1,

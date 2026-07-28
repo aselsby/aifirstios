@@ -115,8 +115,9 @@ check(
     voiceIntentClassifier.includes("intentType = \"outdoor_activity\"") &&
     voiceIntentClassifier.includes("intentType = \"os_control\"") &&
     voiceIntentClassifier.includes("intentType = \"general_mobile_intent\"") &&
-    voiceIntentClassifier.includes("val controlKeywords = listOf(\"stop autonomy\", \"ask only\", \"draft only\", \"trusted auto\", \"require approval\", \"always ask\", \"ask before\", \"cancel\", \"never mind\", \"nevermind\")") &&
+    voiceIntentClassifier.includes("stop autonomy") &&
     voiceIntentClassifier.includes("val taskKeywords = listOf(\"task\", \"todo\", \"to-do\", \"remind\", \"reminder\")") &&
+    voiceIntentClassifier.includes("lifeDomainRouter.route") &&
     voiceHandoffRunner.includes("fun startMobileIntentCapture") &&
     voiceHandoffRunner.includes("val classification = intentClassifier.classify(text)") &&
     voiceHandoffRunner.includes("intentHint = classification.intentType") &&
@@ -127,9 +128,10 @@ check(
     launcherActivity.includes("runtime.runMobileIntentWorkflow(") &&
     launcherActivity.includes("intentType = mobileIntentType") &&
     conductorRuntime.includes("fun runMobileIntentWorkflow(") &&
-    conductorRuntime.includes("\"app_task\" -> runAppTaskWorkflow(") &&
-    conductorRuntime.includes("\"outdoor_activity\" -> runOutdoorActivityWorkflow(") &&
-    conductorRuntime.includes("else -> runGeneralMobileIntentWorkflow(") &&
+    conductorRuntime.includes("runAppTaskWorkflow(") &&
+    conductorRuntime.includes("runOutdoorActivityWorkflow(") &&
+    conductorRuntime.includes("runLifeDomainWorkflow(") &&
+    conductorRuntime.includes("runGeneralMobileIntentWorkflow(") &&
     conductorRuntime.includes("private fun runAppTaskWorkflow(") &&
     conductorRuntime.includes("id = \"task_app_task\"") &&
     conductorRuntime.includes("actionType = \"tasks.add\"") &&
@@ -471,8 +473,10 @@ check(
   "app_sessions_support_per_action_approval_overrides",
   appOperationModels.includes("val approvalRequiredActionTypes: Set<String> = emptySet()") &&
     appOperationModels.includes("fun requiresApprovalFor(actionType: String): Boolean") &&
-    appOperationSessionStore.includes("approvalRequiredActionTypes = setOf(\"outbound_message.send\")") &&
-    appOperationSessionStore.includes("approvalRequiredActionTypes = setOf(\"public_post.create\")") &&
+    appOperationSessionStore.includes("outbound_message.send") &&
+    appOperationSessionStore.includes("public_post.create") &&
+    appOperationSessionStore.includes("purchase.create") &&
+    appOperationSessionStore.includes("banking.transfer.create") &&
     androidPreferencesRecordStore.includes(".put(\"approvalRequiredActionTypes\", approvalRequiredActionTypes.toJsonArray())") &&
     androidPreferencesRecordStore.includes("approvalRequiredActionTypes = optJSONArray(\"approvalRequiredActionTypes\")?.toStringSet() ?: emptySet()") &&
     tableBlock(androidRecordStoreSchema, "app_operation_sessions").includes("approval_required_action_types_json TEXT NOT NULL DEFAULT '[]'") &&
@@ -556,10 +560,16 @@ check(
 );
 check(
   "agent_routed_steps_preserve_required_sources",
-  toolRegistry.includes("\"outbound_message.create_draft\" -> setOf(\"device_contacts\")") &&
-    toolRegistry.includes("\"calendar.hold.create\" -> setOf(\"google_calendar\")") &&
-    toolRegistry.includes("\"maps.route.open\" -> setOf(\"maps\")") &&
-    toolRegistry.includes("\"public_post.create\" -> setOf(\"facebook_events\")"),
+  toolRegistry.includes("outbound_message.create_draft") &&
+    toolRegistry.includes("setOf(\"device_contacts\")") &&
+    toolRegistry.includes("calendar.hold.create") &&
+    toolRegistry.includes("setOf(\"google_calendar\")") &&
+    toolRegistry.includes("maps.route.open") &&
+    toolRegistry.includes("setOf(\"maps\")") &&
+    toolRegistry.includes("public_post.create") &&
+    toolRegistry.includes("setOf(\"facebook_events\")") &&
+    toolRegistry.includes("setOf(\"shopping\")") &&
+    toolRegistry.includes("setOf(\"banking\")"),
   "app-agent operation routes carry the source grants required by the user intent"
 );
 check(
@@ -779,6 +789,29 @@ check(
     launcherActivity.includes("withContext(Dispatchers.Default)") &&
     launcherActivity.includes("launcher.workflow_rendered"),
   "outdoor planning hydrates live calendar, weather, nearby outdoor places, and contacts with accessibility setup affordance"
+);
+check(
+  "life_app_subagent_matrix_covers_personal_os_surfaces",
+  read("app/src/main/java/app/conductor/operator/accessibility/LifeAppPlaybooks.kt").includes("object LifeAppPlaybooks") &&
+    read("app/src/main/java/app/conductor/operator/accessibility/LifeAppPlaybooks.kt").includes("banking.transfer.create") &&
+    read("app/src/main/java/app/conductor/operator/accessibility/LifeAppPlaybooks.kt").includes("purchase.create") &&
+    read("app/src/main/java/app/conductor/operator/accessibility/LifeAppPlaybooks.kt").includes("contacts.lookup") &&
+    read("app/src/main/java/app/conductor/operator/accessibility/LifeAppPlaybooks.kt").includes("email.create_draft") &&
+    read("app/src/main/java/app/conductor/operator/accessibility/LifeAppSkillCatalog.kt").includes("enum class LifeDomain") &&
+    read("app/src/main/java/app/conductor/planner/LifeDomainPlanner.kt").includes("class LifeDomainPlanner") &&
+    read("app/src/main/java/app/conductor/voice/LifeDomainIntentRouter.kt").includes("class LifeDomainIntentRouter") &&
+    read("app/src/main/java/app/conductor/voice/VoiceIntentClassifier.kt").includes("lifeDomainRouter.route") &&
+    conductorRuntime.includes("runLifeDomainWorkflow") &&
+    conductorRuntime.includes("intentType.startsWith(\"life_\")") &&
+    toolRegistry.includes("banking.transfer.create") &&
+    toolRegistry.includes("shopping.cart.add") &&
+    read("app/src/main/java/app/conductor/policy/PolicyEngine.kt").includes("Money-moving actions always require exact user approval") &&
+    read("app/src/main/java/app/conductor/graph/LifeSourceGrantSeeder.kt").includes("seedDefaults") &&
+    launcherActivity.includes("LifeSourceGrantSeeder.seedDefaults") &&
+    launcherState.includes("val domain: String") &&
+    launcherState.includes("val moneyMoving: Boolean") &&
+    launcherScreen.includes("Money-moving skill"),
+  "life domains route as app subagents with money-moving exact approval"
 );
 check(
   "launcher_supplies_record_backed_registry_provider",

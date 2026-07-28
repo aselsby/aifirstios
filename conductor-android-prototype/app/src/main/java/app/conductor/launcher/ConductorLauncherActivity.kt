@@ -30,6 +30,7 @@ import app.conductor.audit.AuditLedger
 import app.conductor.connectors.defaultOutdoorConnectorRuntime
 import app.conductor.connectors.outdoorPlanningRequests
 import app.conductor.graph.AppAgentGrant
+import app.conductor.graph.LifeSourceGrantSeeder
 import app.conductor.graph.PersonalGraphStore
 import app.conductor.operator.accessibility.AccessibilityQueueingLiveBridge
 import app.conductor.operator.accessibility.AppAgentOnboarding
@@ -79,7 +80,10 @@ class ConductorLauncherActivity : ComponentActivity() {
             val recordStore = remember {
                 AndroidConductorRecordStoreFactory.create(applicationContext)
             }
-            remember { CustomAppPlaybookSeeder.seedDefaults(recordStore) }
+            remember {
+                CustomAppPlaybookSeeder.seedDefaults(recordStore)
+                LifeSourceGrantSeeder.seedDefaults(recordStore)
+            }
             val accountSessionStore = remember { RecordBackedAccountSessionStore(recordStore) }
             val accountSession = accountSessionStore.currentSession()
             val policyStore = remember { UserPolicyStore(applicationContext, recordStore) }
@@ -136,10 +140,16 @@ class ConductorLauncherActivity : ComponentActivity() {
                 mutableStateOf(policyStore.load())
             }
             var utterance by remember {
-                mutableStateOf("Find me something outdoors to do this afternoon and draft an invite to Maya.")
+                mutableStateOf(
+                    intent.getStringExtra("conductor_utterance")
+                        ?: "Find me something outdoors to do this afternoon and draft an invite to Maya."
+                )
             }
             var mobileIntentType by remember {
-                mutableStateOf("outdoor_activity")
+                mutableStateOf(
+                    intent.getStringExtra("conductor_intent")
+                        ?: "outdoor_activity"
+                )
             }
             var forcedAppPlaybookId by remember {
                 mutableStateOf("")

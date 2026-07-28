@@ -166,7 +166,7 @@ class AppOperationPlaybookRegistry(
                 )
             )
         )
-    )
+    ) + LifeAppPlaybooks.all()
 
     fun find(playbookId: String): AppOperationPlaybook? =
         playbooks.firstOrNull { it.id == playbookId }

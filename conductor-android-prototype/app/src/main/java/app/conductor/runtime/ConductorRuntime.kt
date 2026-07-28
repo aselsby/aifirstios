@@ -4,6 +4,8 @@ import android.content.Context
 import app.conductor.audit.AuditLedger
 import app.conductor.context.MockContextBroker
 import app.conductor.operator.accessibility.AppOperationPlaybookRegistry
+import app.conductor.operator.accessibility.LifeDomain
+import app.conductor.planner.LifeDomainPlanner
 import app.conductor.planner.OutdoorActivityPlanner
 import app.conductor.policy.PolicyEngine
 import app.conductor.storage.ConductorRecordStore
@@ -27,8 +29,8 @@ class ConductorRuntime(
         utterance: String = "Find me something outdoors to do this afternoon and draft an invite to Maya.",
         forcedPlaybookId: String = ""
     ): WorkflowResult =
-        when (intentType) {
-            "app_task" -> runAppTaskWorkflow(
+        when {
+            intentType == "app_task" || intentType == "life_tasks" -> runAppTaskWorkflow(
                 policy = policy,
                 approvedApprovalIds = approvedApprovalIds,
                 approvedApprovalDecisions = approvedApprovalDecisions,
@@ -36,7 +38,16 @@ class ConductorRuntime(
                 userId = userId,
                 utterance = utterance
             )
-            "outdoor_activity" -> runOutdoorActivityWorkflow(
+            intentType == "outdoor_activity" -> runOutdoorActivityWorkflow(
+                policy = policy,
+                approvedApprovalIds = approvedApprovalIds,
+                approvedApprovalDecisions = approvedApprovalDecisions,
+                deniedApprovalIds = deniedApprovalIds,
+                userId = userId,
+                utterance = utterance
+            )
+            intentType.startsWith("life_") -> runLifeDomainWorkflow(
+                intentType = intentType,
                 policy = policy,
                 approvedApprovalIds = approvedApprovalIds,
                 approvedApprovalDecisions = approvedApprovalDecisions,
@@ -134,6 +145,76 @@ class ConductorRuntime(
             deniedApprovalIds = deniedApprovalIds,
             audit = auditLedger.all()
         )
+    }
+
+    private fun runLifeDomainWorkflow(
+        intentType: String,
+        policy: UserPolicy,
+        approvedApprovalIds: Set<String>,
+        approvedApprovalDecisions: List<StoredApprovalDecision>,
+        deniedApprovalIds: Set<String>,
+        userId: String,
+        utterance: String
+    ): WorkflowResult {
+        val domain = lifeDomainFromIntent(intentType)
+        val task = Task(
+            id = "task_${intentType}",
+            userId = userId,
+            goal = utterance,
+            intentType = intentType,
+            mode = policy.mode,
+            createdAtIso = SystemClock.nowIso()
+        )
+        recordStore?.saveTask(task)
+        auditLedger.record("task.started", "Started ${task.id} in ${task.mode}")
+        auditLedger.record("intent.routed", "$intentType:${domain.id}:${task.goal}")
+        val context = ContextBundle(
+            id = "ctx_${task.id}",
+            taskId = task.id,
+            purpose = domain.id,
+            items = emptyMap()
+        )
+        val plan = LifeDomainPlanner(auditLedger).createPlan(task, domain, utterance)
+        val firstPass = plan.steps.map {
+            runStep(
+                step = it,
+                userPolicy = policy,
+                approvedApprovalIds = approvedApprovalIds,
+                approvedApprovalDecisions = approvedApprovalDecisions,
+                deniedApprovalIds = deniedApprovalIds,
+                userId = task.userId
+            )
+        }
+        val approved = firstPass.filter { it.status == StepStatus.SUCCEEDED && it.approval != null }
+        persistOperationTimeline(task, plan, firstPass)
+        auditLedger.record(
+            "task.completed",
+            "intent=$intentType, domain=${domain.id}, firstPass=${firstPass.count { it.status == StepStatus.SUCCEEDED }}, approvals=${approved.size}"
+        )
+        return WorkflowResult(
+            task = task,
+            context = context,
+            plan = plan,
+            firstPassResults = firstPass,
+            approvedResults = approved,
+            approvedApprovalIds = approvedApprovalIds,
+            deniedApprovalIds = deniedApprovalIds,
+            audit = auditLedger.all()
+        )
+    }
+
+    private fun lifeDomainFromIntent(intentType: String): LifeDomain = when (intentType) {
+        "life_banking" -> LifeDomain.BANKING
+        "life_shopping" -> LifeDomain.SHOPPING
+        "life_maps" -> LifeDomain.MAPS
+        "life_contacts" -> LifeDomain.CONTACTS
+        "life_email" -> LifeDomain.EMAIL
+        "life_messaging" -> LifeDomain.MESSAGING
+        "life_calendar" -> LifeDomain.CALENDAR
+        "life_social" -> LifeDomain.SOCIAL
+        "life_browser" -> LifeDomain.BROWSER
+        "life_tasks" -> LifeDomain.TASKS
+        else -> LifeDomain.OTHER
     }
 
     private fun runAppTaskWorkflow(

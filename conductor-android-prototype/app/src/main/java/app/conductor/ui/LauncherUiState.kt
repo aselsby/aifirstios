@@ -167,6 +167,9 @@ data class AppCapabilityUi(
 
 data class AppSkillUi(
     val packageName: String,
+    val domain: String,
+    val displayName: String,
+    val moneyMoving: Boolean,
     val actionCount: Int,
     val enabledActionCount: Int,
     val readyActionCount: Int,
@@ -671,11 +674,20 @@ private fun List<AppOperationPlaybook>.toAppCapabilityUi(
 
 private fun List<AppCapabilityUi>.toAppSkillUi(): List<AppSkillUi> =
     groupBy { it.packageName }
-        .toSortedMap()
         .map { (packageName, capabilities) ->
             val sortedCapabilities = capabilities.sortedBy { it.actionType }
+            val domain = app.conductor.operator.accessibility.LifeAppSkillCatalog.domainFor(
+                packageName,
+                sortedCapabilities.firstOrNull()?.actionType.orEmpty()
+            )
             AppSkillUi(
                 packageName = packageName,
+                domain = domain.title,
+                displayName = app.conductor.operator.accessibility.LifeAppSkillCatalog.displayNameFor(packageName),
+                moneyMoving = sortedCapabilities.any {
+                    app.conductor.operator.accessibility.LifeAppSkillCatalog.moneyMovingAction(it.actionType) ||
+                        it.riskLabel.contains("money")
+                },
                 actionCount = sortedCapabilities.size,
                 enabledActionCount = sortedCapabilities.count { it.playbookGrantActive },
                 readyActionCount = sortedCapabilities.count {
@@ -701,6 +713,7 @@ private fun List<AppCapabilityUi>.toAppSkillUi(): List<AppSkillUi> =
                 capabilities = sortedCapabilities
             )
         }
+        .sortedWith(compareBy({ it.domain }, { it.displayName }))
 
 private fun AppOperationStep.toStepSummary(): String =
     listOfNotNull(

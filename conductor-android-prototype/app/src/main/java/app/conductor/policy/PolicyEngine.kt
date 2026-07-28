@@ -13,13 +13,19 @@ class PolicyEngine {
         "email.send",
         "public_post.create",
         "calendar.confirm_booking",
-        "location.share"
+        "location.share",
+        "contacts.call",
+        "purchase.create",
+        "banking.transfer.create",
+        "payment.send"
     )
 
-    private val blockedInMvp = setOf(
-        "purchase.create",
+    /** Never automate credentials, security settings, or irreversible account destruction. */
+    private val blockedAlways = setOf(
         "account_security.change",
-        "data.delete"
+        "data.delete",
+        "password.enter",
+        "mfa.bypass"
     )
 
     fun evaluate(step: PlanStep, policy: UserPolicy): PolicyResult {
@@ -30,10 +36,18 @@ class PolicyEngine {
             )
         }
 
-        if (blockedInMvp.contains(step.actionType)) {
+        if (blockedAlways.contains(step.actionType)) {
             return PolicyResult(
                 decision = PolicyDecision.BLOCK,
-                reason = "This action is blocked in the MVP until reliability and trust controls are proven."
+                reason = "This action is never automated by Conductor (security boundary)."
+            )
+        }
+
+        // Money movement always requires exact approval regardless of autonomy mode.
+        if (step.actionType in setOf("purchase.create", "banking.transfer.create", "payment.send")) {
+            return PolicyResult(
+                decision = PolicyDecision.REQUIRE_APPROVAL,
+                reason = "Money-moving actions always require exact user approval of amount and destination."
             )
         }
 

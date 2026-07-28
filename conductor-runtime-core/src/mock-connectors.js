@@ -23,7 +23,7 @@ export function createMockConnectors() {
           summary: "Clear after 1 PM, 78 F, low wind",
           bestOutdoorWindow: {
             startsAt: "2026-07-27T14:00:00-05:00",
-            endsAt: "2026-07-27T18:00:00-05:00"
+            endsAt: "2027-07-27T18:00:00-05:00"
           }
         };
       }

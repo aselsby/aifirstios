@@ -306,7 +306,7 @@ test("app-agent onboarding can create a future-dated session grant", () => {
   const onboarded = operator.onboardAppAgent({
     playbook,
     appName: "Tasks",
-    expiresAt: "2026-07-27T18:00:00-05:00",
+    expiresAt: "2027-07-27T18:00:00-05:00",
     observedTree: tree
   });
   const result = operator.runRouted({
@@ -316,7 +316,7 @@ test("app-agent onboarding can create a future-dated session grant", () => {
   });
 
   assert.equal(onboarded.status, OperatorStatus.SUCCEEDED);
-  assert.equal(onboarded.surface.expiresAt, "2026-07-27T18:00:00-05:00");
+  assert.equal(onboarded.surface.expiresAt, "2027-07-27T18:00:00-05:00");
   assert.equal(result.route.status, RouteStatus.READY);
   assert.equal(result.status, OperatorStatus.SUCCEEDED);
 });
