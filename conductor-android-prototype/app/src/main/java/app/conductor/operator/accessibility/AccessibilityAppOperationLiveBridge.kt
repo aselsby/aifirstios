@@ -106,6 +106,9 @@ class AccessibilityAppOperationLiveBridge(
     }
 
     private fun launchOnce(request: AppOperationRequest, reason: String): AppOperationResult {
+        if (reason.startsWith("account_proof_missing")) {
+            auditLedger.record("operator.live_account_proof_handoff", "${request.id}:$reason")
+        }
         if (foregroundLaunchAttempted.contains(request.id)) {
             auditLedger.record("operator.live_foreground_launch_wait", "${request.id}:$reason")
             return needsHandoff(request, "foreground_launch_pending:${request.packageName}")
