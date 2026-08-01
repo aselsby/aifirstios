@@ -830,6 +830,19 @@ check(
   "controlled demo surface enables live accessibility tree verification (G4)"
 );
 check(
+  "g5_approval_harness_actions",
+  launcherActivity.includes("approve_all_pending") &&
+    launcherActivity.includes("deny_all_pending") &&
+    launcherActivity.includes("stop_autonomy") &&
+    launcherActivity.includes("approval.harness_approved") &&
+    launcherActivity.includes("approval.harness_denied") &&
+    read("app/src/main/java/app/conductor/audit/AuditLedger.kt").includes("approval.") &&
+    conductorRuntime.includes("approval.queued") &&
+    conductorRuntime.includes("approval.granted") &&
+    conductorRuntime.includes("approval.denied"),
+  "harness can approve/deny pending cards and instant-stop for G5/G7"
+);
+check(
   "launcher_supplies_record_backed_registry_provider",
   launcherActivity.includes("registryProvider =") &&
     launcherActivity.includes("customPlaybooks = recordStore.appOperationPlaybooks()"),

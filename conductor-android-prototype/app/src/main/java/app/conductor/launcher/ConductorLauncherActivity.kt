@@ -434,6 +434,10 @@ class ConductorLauncherActivity : ComponentActivity() {
 
             var launcherState by remember { mutableStateOf<LauncherUiState?>(null) }
             var workflowRunning by remember { mutableStateOf(true) }
+            val harnessAction = intent.getStringExtra("conductor_action").orEmpty()
+            var harnessActionHandled by remember(harnessAction, utterance, mobileIntentType) {
+                mutableStateOf(false)
+            }
             LaunchedEffect(
                 decisionVersion,
                 mobileIntentType,
@@ -487,10 +491,81 @@ class ConductorLauncherActivity : ComponentActivity() {
                     teachDraftSourceScopeText = teachDraftSourceScopeText
                 )
                 workflowRunning = false
+                val pendingApprovals = result.firstPassResults.count {
+                    it.status == app.conductor.runtime.StepStatus.AWAITING_APPROVAL
+                }
                 val detail =
-                    "${result.task.intentType}:steps=${result.plan.steps.size}:context=${result.context.items.size}:rec=${result.plan.recommendation.title}"
+                    "${result.task.intentType}:steps=${result.plan.steps.size}:context=${result.context.items.size}:rec=${result.plan.recommendation.title}:pendingApprovals=$pendingApprovals"
                 runtimeAuditLedger.record("launcher.workflow_rendered", detail)
                 Log.i("ConductorOS", "workflow_rendered $detail")
+            }
+
+            // Test harness hooks: approve/deny pending cards or instant-stop without UI taps.
+            LaunchedEffect(launcherState, harnessAction, harnessActionHandled) {
+                if (harnessActionHandled || harnessAction.isBlank() || launcherState == null) return@LaunchedEffect
+                when (harnessAction) {
+                    "approve_all_pending" -> {
+                        val pending = launcherState!!.approvals.filter {
+                            it.status == app.conductor.runtime.ApprovalStatus.PENDING
+                        }
+                        if (pending.isEmpty()) return@LaunchedEffect
+                        pending.forEach { card ->
+                            approvalDecisionStore.approve(
+                                app.conductor.runtime.ApprovalCard(
+                                    id = card.id,
+                                    stepId = card.id.removePrefix("approval_"),
+                                    actionType = card.actionType,
+                                    exactContent = card.exactContent.ifBlank { null },
+                                    recipient = null,
+                                    reason = card.reason
+                                )
+                            )
+                            runtimeAuditLedger.record(
+                                "approval.harness_approved",
+                                "${card.id}:${card.actionType}:${card.exactContent.take(80)}"
+                            )
+                            Log.i("ConductorOS", "approval.harness_approved ${card.id}:${card.actionType}")
+                        }
+                        harnessActionHandled = true
+                        decisionVersion += 1
+                    }
+                    "deny_all_pending" -> {
+                        val pending = launcherState!!.approvals.filter {
+                            it.status == app.conductor.runtime.ApprovalStatus.PENDING
+                        }
+                        if (pending.isEmpty()) return@LaunchedEffect
+                        pending.forEach { card ->
+                            approvalDecisionStore.deny(card.id)
+                            runtimeAuditLedger.record(
+                                "approval.harness_denied",
+                                "${card.id}:${card.actionType}"
+                            )
+                            Log.i("ConductorOS", "approval.harness_denied ${card.id}:${card.actionType}")
+                        }
+                        harnessActionHandled = true
+                        decisionVersion += 1
+                    }
+                    "stop_autonomy" -> {
+                        userPolicy = policyStore.saveMode(AutonomyMode.ASK_ONLY)
+                        recordStore.appOperationSessions().forEach { session ->
+                            recordStore.saveAppOperationSession(
+                                session.copy(
+                                    autonomyMode = AutonomyMode.ASK_ONLY,
+                                    remainingAutonomousActions = 0
+                                )
+                            )
+                        }
+                        recordStore.clearQueuedAppOperations()
+                        voiceHandoffRunner.cancel("autonomy_stopped_by_harness")
+                        runtimeAuditLedger.record(
+                            "autonomy.stopped",
+                            "Harness instant stop: ASK_ONLY + queue cleared"
+                        )
+                        Log.i("ConductorOS", "autonomy.stopped harness")
+                        harnessActionHandled = true
+                        decisionVersion += 1
+                    }
+                }
             }
 
             val state = launcherState
@@ -879,20 +954,28 @@ class ConductorLauncherActivity : ComponentActivity() {
                         approvalDecisionStore.approve(
                             app.conductor.runtime.ApprovalCard(
                                 id = pending.id,
-                                stepId = pending.id,
+                                stepId = pending.id.removePrefix("approval_"),
                                 actionType = pending.actionType,
                                 exactContent = pending.exactContent.ifBlank { null },
                                 recipient = null,
                                 reason = pending.reason
                             )
                         )
+                        runtimeAuditLedger.record(
+                            "approval.ui_approved",
+                            "${pending.id}:${pending.actionType}"
+                        )
+                        Log.i("ConductorOS", "approval.ui_approved ${pending.id}:${pending.actionType}")
                     } else {
                         approvalDecisionStore.approve(approvalId)
+                        Log.i("ConductorOS", "approval.ui_approved_id_only $approvalId")
                     }
                     decisionVersion += 1
                 },
                 onApprovalDenied = { approvalId ->
                     approvalDecisionStore.deny(approvalId)
+                    runtimeAuditLedger.record("approval.ui_denied", approvalId)
+                    Log.i("ConductorOS", "approval.ui_denied $approvalId")
                     decisionVersion += 1
                 },
                 onAppHandoffGranted = { requestId ->
