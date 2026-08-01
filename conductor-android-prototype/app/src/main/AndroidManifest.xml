@@ -24,6 +24,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".operator.accessibility.ConductorAgentDemoActivity"
+            android:exported="true"
+            android:label="Conductor Agent Demo" />
+
         <service
             android:name=".voice.VoiceSessionService"
             android:exported="false" />

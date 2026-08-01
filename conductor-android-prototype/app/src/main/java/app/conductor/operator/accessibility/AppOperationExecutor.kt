@@ -15,6 +15,7 @@ class AppOperationExecutor(
     private val sourceAuthorizer: AppOperationSourceAuthorizer = AllowAllAppOperationSourceAuthorizer(),
     // Production path queues for AccessibilityService. Recording bridge is opt-in for tests only.
     private val liveBridge: AppOperationLiveBridge = AccessibilityQueueingLiveBridge(auditLedger),
+    private val foregroundLauncher: AppForegroundLauncher = RecordingAppForegroundLauncher(auditLedger),
     private val nowIso: () -> String = { SystemClock.nowIso() }
 ) {
     fun routeAction(
@@ -269,6 +270,13 @@ class AppOperationExecutor(
         // Live bridges own the operator.verified post_state_receipt after active app-tree checks.
         val liveResult = liveBridge.dispatch(request, playbook)
         if (liveResult.status == AppOperationStatus.NEEDS_HANDOFF) {
+            // Start the target surface from the activity process (not only a11y service),
+            // so background-activity restrictions do not block G4/live demos.
+            val launch = foregroundLauncher.bringToForeground(request.packageName)
+            auditLedger.record(
+                "operator.foreground_assist",
+                "${request.id}:${launch.status}:${launch.detail}"
+            )
             return queueForUserAction(
                 request = request,
                 reason = "Live app operation needs foreground app verification: ${liveResult.detail}",

@@ -23,7 +23,14 @@ class LifeDomainPlanner(private val auditLedger: AuditLedger) {
             LifeDomain.SHOPPING -> shoppingSteps(utterance)
             LifeDomain.BANKING -> bankingSteps(utterance)
             LifeDomain.SOCIAL -> socialSteps(utterance)
-            LifeDomain.BROWSER -> browserSteps(utterance)
+            LifeDomain.BROWSER ->
+                if (utterance.contains("demo", ignoreCase = true) ||
+                    utterance.contains("live", ignoreCase = true) && utterance.contains("access", ignoreCase = true)
+                ) {
+                    demoSteps(utterance)
+                } else {
+                    browserSteps(utterance)
+                }
             LifeDomain.TASKS -> taskSteps(utterance)
             LifeDomain.OTHER -> listOf(
                 PlanStep(
@@ -327,6 +334,24 @@ class LifeDomainPlanner(private val auditLedger: AuditLedger) {
             risk = Risk.LOW,
             externalSideEffect = false,
             input = mapOf("query" to utterance)
+        )
+    )
+
+    private fun demoSteps(utterance: String): List<PlanStep> = listOf(
+        PlanStep(
+            id = "live_demo_draft",
+            title = "Prove live Accessibility operation on Conductor demo surface",
+            tool = "demo.draft",
+            actionType = "demo.app.draft",
+            risk = Risk.LOW,
+            externalSideEffect = false,
+            input = mapOf(
+                "body" to utterance
+                    .replace("run live demo", "", ignoreCase = true)
+                    .replace("agent demo", "", ignoreCase = true)
+                    .trim()
+                    .ifBlank { "Hello from live accessibility" }
+            )
         )
     )
 

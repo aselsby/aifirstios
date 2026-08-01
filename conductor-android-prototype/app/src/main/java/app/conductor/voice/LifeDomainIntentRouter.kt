@@ -17,6 +17,7 @@ class LifeDomainIntentRouter {
             messagingKeywords.any { n.contains(it) } -> LifeDomainRoute(LifeDomain.MESSAGING, "life_messaging", 0.9)
             calendarKeywords.any { n.contains(it) } -> LifeDomainRoute(LifeDomain.CALENDAR, "life_calendar", 0.9)
             socialKeywords.any { n.contains(it) } -> LifeDomainRoute(LifeDomain.SOCIAL, "life_social", 0.88)
+            demoKeywords.any { n.contains(it) } -> LifeDomainRoute(LifeDomain.BROWSER, "life_demo", 0.95)
             browserKeywords.any { n.contains(it) } -> LifeDomainRoute(LifeDomain.BROWSER, "life_browser", 0.84)
             taskKeywords.any { n.contains(it) } -> LifeDomainRoute(LifeDomain.TASKS, "life_tasks", 0.88)
             else -> LifeDomainRoute(LifeDomain.OTHER, "general_mobile_intent", 0.5)
@@ -24,6 +25,7 @@ class LifeDomainIntentRouter {
     }
 
     private companion object {
+        val demoKeywords = listOf("run live demo", "agent demo", "prove live accessibility", "demo draft", "live a11y")
         val bankingKeywords = listOf(
             "balance", "bank", "transfer", "paypal", "venmo", "wallet", "account balance", "send money", "payment"
         )

@@ -814,6 +814,20 @@ check(
   "life domains route as app subagents with money-moving exact approval"
 );
 check(
+  "g4_live_demo_surface_for_accessibility_proof",
+  read("app/src/main/java/app/conductor/operator/accessibility/ConductorAgentDemoActivity.kt").includes("Conductor demo signed in") &&
+    read("app/src/main/java/app/conductor/operator/accessibility/ConductorAgentDemoActivity.kt").includes("demo input field") &&
+    read("app/src/main/java/app/conductor/operator/accessibility/LifeAppPlaybooks.kt").includes("conductor_demo_live_draft") &&
+    read("app/src/main/java/app/conductor/operator/accessibility/LifeAppPlaybooks.kt").includes("demo.app.draft") &&
+    read("app/src/main/java/app/conductor/operator/accessibility/AppForegroundLauncher.kt").includes("ConductorAgentDemoActivity") &&
+    accessibilityAppOperationLiveBridge.includes("operator.live_account_proof_relaunch") &&
+    accessibilityAppOperationLiveBridge.includes("verifyExpected") &&
+    manifest.includes("ConductorAgentDemoActivity") &&
+    toolRegistry.includes("demo.app.draft") &&
+    conductorRuntime.includes("life_demo"),
+  "controlled demo surface enables live accessibility tree verification (G4)"
+);
+check(
   "launcher_supplies_record_backed_registry_provider",
   launcherActivity.includes("registryProvider =") &&
     launcherActivity.includes("customPlaybooks = recordStore.appOperationPlaybooks()"),

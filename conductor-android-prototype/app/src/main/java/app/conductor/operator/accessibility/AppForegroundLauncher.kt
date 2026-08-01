@@ -36,13 +36,17 @@ class AndroidAppForegroundLauncher(
     private val auditLedger: AuditLedger
 ) : AppForegroundLauncher {
     override fun bringToForeground(packageName: String): AppForegroundLaunchResult {
-        val intent = context.packageManager.getLaunchIntentForPackage(packageName)
-            ?: return AppForegroundLaunchResult(
-                status = AppForegroundLaunchStatus.FAILED,
-                detail = "launch_intent_missing:$packageName"
-            ).also {
-                auditLedger.record("app_foreground.launch_failed", it.detail)
-            }
+        val intent = when {
+            packageName == context.packageName ->
+                Intent(context, ConductorAgentDemoActivity::class.java)
+            else ->
+                context.packageManager.getLaunchIntentForPackage(packageName)
+        } ?: return AppForegroundLaunchResult(
+            status = AppForegroundLaunchStatus.FAILED,
+            detail = "launch_intent_missing:$packageName"
+        ).also {
+            auditLedger.record("app_foreground.launch_failed", it.detail)
+        }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         return runCatching {
             context.startActivity(intent)

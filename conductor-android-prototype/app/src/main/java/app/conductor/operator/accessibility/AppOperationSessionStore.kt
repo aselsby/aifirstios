@@ -184,6 +184,13 @@ private fun defaultSessions(): List<AppOperationSession> {
             setOf("chrome_open_url_safe"),
             setOf("web"),
             "Chrome ready"
+        ),
+        session(
+            "app.conductor.prototype",
+            AutonomyMode.LOW_RISK_AUTO,
+            setOf("conductor_demo_live_draft"),
+            setOf("web"),
+            ConductorAgentDemoActivity.ACCOUNT_PROOF
         )
     )
 }

@@ -1,6 +1,7 @@
 package app.conductor.operator.accessibility
 
 import android.os.Bundle
+import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import app.conductor.audit.AuditLedger
 import app.conductor.runtime.Verification
@@ -12,6 +13,8 @@ class AccessibilityAppOperationLiveBridge(
     private val foregroundLauncher: AppForegroundLauncher = RecordingAppForegroundLauncher(auditLedger),
     private val cancellationRequested: () -> Boolean = { false }
 ) : AppOperationLiveBridge {
+    private val foregroundLaunchAttempted = mutableSetOf<String>()
+
     override fun dispatch(
         request: AppOperationRequest,
         playbook: AppOperationPlaybook
@@ -23,30 +26,22 @@ class AccessibilityAppOperationLiveBridge(
 
         val activePackageName = activePackageProvider()
         if (activePackageName != request.packageName) {
-            val launch = foregroundLauncher.bringToForeground(request.packageName)
-            return when (launch.status) {
-                AppForegroundLaunchStatus.ALREADY_FOREGROUND -> {
-                    auditLedger.record("operator.live_foreground_verified", "${request.id}:${request.packageName}")
-                    dispatch(request, playbook)
-                }
-                AppForegroundLaunchStatus.LAUNCHED -> {
-                    auditLedger.record("operator.live_foreground_launch_pending", "${request.id}:${launch.detail}")
-                    needsHandoff(request, "foreground_launch_pending:${request.packageName}")
-                }
-                AppForegroundLaunchStatus.FAILED -> {
-                    auditLedger.record("operator.live_foreground_launch_failed", "${request.id}:${launch.detail}")
-                    needsHandoff(request, launch.detail)
-                }
-            }
+            return launchOnce(request, "package_mismatch")
         }
 
         var root = activeRootProvider()
             ?: return needsHandoff(request, "active_window_missing")
 
-        if (!hasUniqueVisibleLabel(root, playbook.accountProofLabel)) {
-            auditLedger.record("operator.live_account_proof_handoff", "${request.id}:${playbook.accountProofLabel}")
-            return needsHandoff(request, "account_proof_missing_or_ambiguous")
+        // Blank account proof means "no login chip required" (used by controlled demo surfaces).
+        // If proof is missing, try bringing the target surface to the foreground once
+        // (same package can still be the wrong activity, e.g. launcher vs demo surface).
+        if (playbook.accountProofLabel.isNotBlank() &&
+            !hasUniqueVisibleLabel(root, playbook.accountProofLabel)
+        ) {
+            return launchOnce(request, "account_proof_missing:${playbook.accountProofLabel}")
         }
+        // Surface is correct — allow future retries after a prior launch attempt.
+        foregroundLaunchAttempted.remove(request.id)
 
         for (step in playbook.steps) {
             if (cancellationRequested()) {
@@ -84,9 +79,14 @@ class AccessibilityAppOperationLiveBridge(
             root = activeRootProvider()
                 ?: return needsHandoff(request, "active_window_missing_after_action")
             val expectedLabel = materialize(step.expectedState, request.input)
-            if (!hasUniqueVisibleLabel(root, expectedLabel)) {
-                auditLedger.record("operator.live_verifier_handoff", "${request.id}:${step.id}:$expectedLabel")
-                return needsHandoff(request, "verifier_missing_or_ambiguous:$expectedLabel")
+            if (!verifyExpected(root, expectedLabel, step, request.input, target)) {
+                // One cheap refresh without sleeping on the a11y thread.
+                root = activeRootProvider()
+                    ?: return needsHandoff(request, "active_window_missing_after_action")
+                if (!verifyExpected(root, expectedLabel, step, request.input, target)) {
+                    auditLedger.record("operator.live_verifier_handoff", "${request.id}:${step.id}:$expectedLabel")
+                    return needsHandoff(request, "verifier_missing_or_ambiguous:$expectedLabel")
+                }
             }
             auditLedger.record("operator.live_step_executed", "${request.id}:${step.id}:$selectorLabel")
         }
@@ -96,6 +96,7 @@ class AccessibilityAppOperationLiveBridge(
             method = "accessibility_live_tree:${playbook.id}:post_state_receipt"
         )
         auditLedger.record("operator.live_verified", "${request.id}:${verification.method}")
+        Log.i(TAG, "operator.live_verified ${request.id}:${verification.method}")
         return AppOperationResult(
             requestId = request.id,
             status = AppOperationStatus.VERIFIED,
@@ -104,12 +105,61 @@ class AccessibilityAppOperationLiveBridge(
         )
     }
 
+    private fun launchOnce(request: AppOperationRequest, reason: String): AppOperationResult {
+        if (foregroundLaunchAttempted.contains(request.id)) {
+            auditLedger.record("operator.live_foreground_launch_wait", "${request.id}:$reason")
+            return needsHandoff(request, "foreground_launch_pending:${request.packageName}")
+        }
+        foregroundLaunchAttempted.add(request.id)
+        val launch = foregroundLauncher.bringToForeground(request.packageName)
+        return when (launch.status) {
+            AppForegroundLaunchStatus.ALREADY_FOREGROUND -> {
+                auditLedger.record("operator.live_foreground_verified", "${request.id}:${request.packageName}")
+                // Clear attempt so a subsequent event can re-check the tree.
+                foregroundLaunchAttempted.remove(request.id)
+                needsHandoff(request, "foreground_recheck:${request.packageName}")
+            }
+            AppForegroundLaunchStatus.LAUNCHED -> {
+                auditLedger.record("operator.live_foreground_launch_pending", "${request.id}:${launch.detail}:$reason")
+                needsHandoff(request, "foreground_launch_pending:${request.packageName}")
+            }
+            AppForegroundLaunchStatus.FAILED -> {
+                foregroundLaunchAttempted.remove(request.id)
+                auditLedger.record("operator.live_foreground_launch_failed", "${request.id}:${launch.detail}")
+                needsHandoff(request, launch.detail)
+            }
+        }
+    }
+
     private fun needsHandoff(request: AppOperationRequest, reason: String): AppOperationResult =
         AppOperationResult(
             requestId = request.id,
             status = AppOperationStatus.NEEDS_HANDOFF,
             detail = reason
         )
+
+    private fun verifyExpected(
+        root: AccessibilityNodeInfo,
+        expectedLabel: String,
+        step: AppOperationStep,
+        input: Map<String, String>,
+        actedTarget: AccessibilityNodeInfo
+    ): Boolean {
+        if (expectedLabel.isBlank()) return true
+        if (hasUniqueVisibleLabel(root, expectedLabel)) return true
+        val filled = inputValueFor(step, input)
+        if (!filled.isNullOrBlank()) {
+            if (hasUniqueVisibleLabel(root, filled)) return true
+            val nodeText = actedTarget.text?.toString().orEmpty()
+            if (nodeText == filled) return true
+        }
+        // Semantic equals templates: "compose_text_equals input.body"
+        if (expectedLabel.contains("equals", ignoreCase = true) && !filled.isNullOrBlank()) {
+            val nodeText = actedTarget.text?.toString().orEmpty()
+            if (nodeText == filled || hasUniqueVisibleLabel(root, filled)) return true
+        }
+        return false
+    }
 
     private fun hasUniqueVisibleLabel(root: AccessibilityNodeInfo, label: String): Boolean {
         if (label.isBlank()) return false
@@ -213,5 +263,9 @@ class AccessibilityAppOperationLiveBridge(
             .drop(start + marker.length)
             .takeWhile { it.isLetterOrDigit() || it == '_' }
             .takeIf { it.isNotBlank() }
+    }
+
+    private companion object {
+        const val TAG = "ConductorOS"
     }
 }

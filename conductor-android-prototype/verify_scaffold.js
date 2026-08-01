@@ -75,6 +75,8 @@ const requiredFiles = [
   "app/src/main/java/app/conductor/planner/LifeDomainPlanner.kt",
   "app/src/main/java/app/conductor/voice/LifeDomainIntentRouter.kt",
   "app/src/main/java/app/conductor/graph/LifeSourceGrantSeeder.kt",
+  "app/src/main/java/app/conductor/operator/accessibility/ConductorAgentDemoActivity.kt",
+  "device_live_g4_test.js",
   "app/src/main/java/app/conductor/policy/PolicyEngine.kt",
   "app/src/main/java/app/conductor/policy/UserPolicyStore.kt",
   "app/src/main/java/app/conductor/policy/ApprovalDecisionStore.kt",

@@ -289,6 +289,29 @@ object LifeAppPlaybooks {
             steps = listOf(
                 step("omnibox", "Open URL or search without submitting payments.", "search or type url", "page_loaded", "set_text", "query", listOf("address bar", "search"))
             )
+        ),
+
+        // --- Controlled live a11y proof surface (G4) inside Conductor itself ---
+        playbook(
+            id = "conductor_demo_live_draft",
+            packageName = "app.conductor.prototype",
+            actionType = "demo.app.draft",
+            riskLabel = "low_reversible",
+            requiresExactApproval = false,
+            phrases = setOf("run live demo", "agent demo", "prove live accessibility", "demo draft"),
+            accountProof = ConductorAgentDemoActivity.ACCOUNT_PROOF,
+            inputs = setOf("body"),
+            sources = setOf("web"),
+            steps = listOf(
+                step(
+                    id = "fill_demo_body",
+                    description = "Fill the demo input field via live accessibility SET_TEXT.",
+                    selector = ConductorAgentDemoActivity.INPUT_LABEL,
+                    expected = ConductorAgentDemoActivity.READY_LABEL,
+                    operation = "set_text",
+                    inputKey = "body"
+                )
+            )
         )
     )
 

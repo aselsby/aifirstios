@@ -1,6 +1,7 @@
 package app.conductor.operator.accessibility
 
 import android.accessibilityservice.AccessibilityService
+import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import app.conductor.audit.AuditLedger
@@ -26,17 +27,24 @@ class ConductorAccessibilityService : AccessibilityService() {
     private val liveBridge by lazy {
         AccessibilityAppOperationLiveBridge(
             auditLedger = auditLedger,
-            activeRootProvider = { rootInActiveWindow },
+            activeRootProvider = { resolveActiveRoot() },
             activePackageProvider = { activePackageName },
             foregroundLauncher = AndroidAppForegroundLauncher(applicationContext, auditLedger),
             cancellationRequested = { recordStore.autonomyMode() == AutonomyMode.ASK_ONLY }
         )
     }
 
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        Log.i("ConductorOS", "accessibility.service_connected")
+        // Drain any queued live work when the service binds.
+        drainQueuedOperations(activePackageName ?: applicationContext.packageName)
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         val packageName = event?.packageName?.toString() ?: return
         activePackageName = packageName
-        val root = rootInActiveWindow
+        val root = resolveActiveRoot()
         if (packageName != applicationContext.packageName && root != null) {
             val discovery = root.toAppAgentDiscovery(packageName)
             if (discovery.visibleLabelCounts.isNotEmpty()) {
@@ -56,7 +64,28 @@ class ConductorAccessibilityService : AccessibilityService() {
             return
         }
 
+        // Drain on window transitions; content-change floods ANR if we re-launch every event.
+        val eventType = event.eventType
+        val shouldDrain =
+            eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
+                eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+        if (!shouldDrain) return
+
+        // Throttle content-change drains.
+        val now = System.currentTimeMillis()
+        if (eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
+            now - lastDrainAtMs < 400
+        ) {
+            return
+        }
+        lastDrainAtMs = now
         auditLedger.record("accessibility.window_observed", packageName)
+        drainQueuedOperations(packageName)
+    }
+
+    private var lastDrainAtMs: Long = 0
+
+    private fun drainQueuedOperations(packageName: String) {
         val now = SystemClock.nowIso()
         recordStore.queuedAppOperations()
             .filterNot { queued ->
@@ -76,10 +105,23 @@ class ConductorAccessibilityService : AccessibilityService() {
                     finalizeVerifiedOperation(queued, playbook)
                     recordStore.resolveQueuedAppOperation(queued.request.id)
                     auditLedger.record("accessibility.queue_resolved", queued.request.id)
+                    Log.i("ConductorOS", "accessibility.queue_resolved ${queued.request.id}:${playbook.id}")
                 } else {
                     auditLedger.record("accessibility.queue_still_pending", "${queued.request.id}:${result.detail}")
+                    Log.i("ConductorOS", "accessibility.queue_still_pending ${queued.request.id}:${result.detail}")
                 }
             }
+    }
+
+    private fun resolveActiveRoot(): AccessibilityNodeInfo? {
+        rootInActiveWindow?.let { return it }
+        return try {
+            windows
+                ?.firstOrNull { window -> window.isActive || window.isFocused }
+                ?.root
+        } catch (_: Exception) {
+            null
+        }
     }
 
     override fun onInterrupt() {

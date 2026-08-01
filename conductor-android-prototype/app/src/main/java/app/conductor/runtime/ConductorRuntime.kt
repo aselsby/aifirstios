@@ -174,7 +174,13 @@ class ConductorRuntime(
             purpose = domain.id,
             items = emptyMap()
         )
-        val plan = LifeDomainPlanner(auditLedger).createPlan(task, domain, utterance)
+        // life_demo must force the controlled live a11y proof plan regardless of utterance wording.
+        val planUtterance = if (intentType == "life_demo" && !utterance.contains("demo", ignoreCase = true)) {
+            "run live demo $utterance"
+        } else {
+            utterance
+        }
+        val plan = LifeDomainPlanner(auditLedger).createPlan(task, domain, planUtterance)
         val firstPass = plan.steps.map {
             runStep(
                 step = it,
@@ -213,6 +219,7 @@ class ConductorRuntime(
         "life_calendar" -> LifeDomain.CALENDAR
         "life_social" -> LifeDomain.SOCIAL
         "life_browser" -> LifeDomain.BROWSER
+        "life_demo" -> LifeDomain.BROWSER
         "life_tasks" -> LifeDomain.TASKS
         else -> LifeDomain.OTHER
     }

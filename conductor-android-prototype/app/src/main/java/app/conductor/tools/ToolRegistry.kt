@@ -151,7 +151,7 @@ class ToolRegistry(
             "maps.route.open", "maps.place.search", "location.share" -> setOf("maps")
             "shopping.search", "shopping.cart.add", "purchase.create" -> setOf("shopping")
             "banking.balance.read", "banking.transfer.create", "payment.send", "wallet.cards.read" -> setOf("banking")
-            "browser.open" -> setOf("web")
+            "browser.open", "demo.app.draft" -> setOf("web")
             else -> step.input["__requiredSourceIds"]
                 ?.split(",")
                 ?.map { it.trim() }
@@ -181,7 +181,8 @@ class ToolRegistry(
             "banking.transfer.create",
             "payment.send",
             "wallet.cards.read",
-            "browser.open"
+            "browser.open",
+            "demo.app.draft"
         )
 
         val agentOperatedToolNames = setOf(
@@ -202,7 +203,8 @@ class ToolRegistry(
             "banking.balance",
             "banking.transfer",
             "payment.send",
-            "browser.open"
+            "browser.open",
+            "demo.draft"
         )
     }
 }

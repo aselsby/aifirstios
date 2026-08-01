@@ -121,7 +121,11 @@ class ConductorLauncherActivity : ComponentActivity() {
                     approvalReceiptLedger = RecordBackedAppOperationApprovalReceiptLedger(recordStore),
                     sourceAuthorizer = RecordBackedAppOperationSourceAuthorizer(recordStore),
                     // Never verify through recording simulation on the product launcher path.
-                    liveBridge = AccessibilityQueueingLiveBridge(runtimeAuditLedger)
+                    liveBridge = AccessibilityQueueingLiveBridge(runtimeAuditLedger),
+                    foregroundLauncher = app.conductor.operator.accessibility.AndroidAppForegroundLauncher(
+                        applicationContext,
+                        runtimeAuditLedger
+                    )
                 )
             }
             val runtime = remember {
