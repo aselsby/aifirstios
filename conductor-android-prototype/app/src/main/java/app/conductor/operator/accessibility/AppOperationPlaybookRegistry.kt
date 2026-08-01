@@ -15,24 +15,20 @@ class AppOperationPlaybookRegistry(
             riskLabel = "low_reversible",
             requiresExactApproval = false,
             invocationPhrases = setOf("draft invite", "draft message", "write message"),
-            accountProofLabel = "Messages signed in",
+            // Real Google Messages has no "signed in" chip; session store still tracks login proof.
+            // Live path opens smsto: recipient via AppForegroundLauncher then fills compose.
+            accountProofLabel = "",
             requiredInputKeys = setOf("recipient", "body"),
             requiredSourceIds = setOf("device_contacts"),
             steps = listOf(
-                AppOperationStep(
-                    id = "open_recipient_thread",
-                    description = "Open the selected contact thread.",
-                    selectorHint = "conversation recipient matches input.recipient",
-                    expectedState = "recipient_thread_visible",
-                    recoverySelectorHints = listOf("new message button", "search conversations")
-                ),
                 AppOperationStep(
                     id = "fill_draft_body",
                     description = "Fill the compose field without tapping send.",
                     selectorHint = "message input field",
                     expectedState = "compose_text_equals input.body",
                     operation = "set_text",
-                    inputKey = "body"
+                    inputKey = "body",
+                    recoverySelectorHints = listOf("new message", "Start chat", "compose")
                 )
             )
         ),

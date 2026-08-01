@@ -843,6 +843,18 @@ check(
   "harness can approve/deny pending cards and instant-stop for G5/G7"
 );
 check(
+  "g4_oem_messages_live_path",
+  read("app/src/main/java/app/conductor/operator/accessibility/AppForegroundLauncher.kt").includes("smsto:") &&
+    read("app/src/main/java/app/conductor/operator/accessibility/AppForegroundLauncher.kt").includes("com.google.android.apps.messaging") &&
+    accessibilityAppOperationLiveBridge.includes("uniqueEditableNode") &&
+    accessibilityAppOperationLiveBridge.includes("findStepTarget") &&
+    appOperationPlaybookRegistry.includes("id = \"messages_draft_invite\"") &&
+    appOperationPlaybookRegistry.includes("message input field") &&
+    fs.existsSync(path.join(root, "device_oem_g4_test.js")) &&
+    read("app/src/main/java/app/conductor/planner/LifeDomainPlanner.kt").includes("Phone numbers for OEM"),
+  "OEM Messages draft uses smsto deep link + editable node set_text (G4-OEM)"
+);
+check(
   "launcher_supplies_record_backed_registry_provider",
   launcherActivity.includes("registryProvider =") &&
     launcherActivity.includes("customPlaybooks = recordStore.appOperationPlaybooks()"),
@@ -888,7 +900,7 @@ check(
     accessibilityAppOperationLiveBridge.includes("activeRootProvider: () -> AccessibilityNodeInfo?") &&
     accessibilityAppOperationLiveBridge.includes("activePackageProvider: () -> String?") &&
     accessibilityAppOperationLiveBridge.includes("foregroundLauncher: AppForegroundLauncher") &&
-    accessibilityAppOperationLiveBridge.includes("foregroundLauncher.bringToForeground(request.packageName)") &&
+    accessibilityAppOperationLiveBridge.includes("foregroundLauncher.bringToForeground(request.packageName, request)") &&
     accessibilityAppOperationLiveBridge.includes("foreground_launch_pending:${request.packageName}") &&
     accessibilityAppOperationLiveBridge.includes("operator.live_foreground_launch_pending") &&
     accessibilityAppOperationLiveBridge.includes("operator.live_foreground_launch_failed") &&

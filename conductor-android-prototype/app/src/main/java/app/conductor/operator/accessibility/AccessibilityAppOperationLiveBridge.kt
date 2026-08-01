@@ -32,7 +32,8 @@ class AccessibilityAppOperationLiveBridge(
         var root = activeRootProvider()
             ?: return needsHandoff(request, "active_window_missing")
 
-        // Blank account proof means "no login chip required" (used by controlled demo surfaces).
+        // Blank account proof means "no login chip required" (used by controlled demo surfaces
+        // and OEM Messages drafts where Google Messages has no synthetic signed-in label).
         // If proof is missing, try bringing the target surface to the foreground once
         // (same package can still be the wrong activity, e.g. launcher vs demo surface).
         if (playbook.accountProofLabel.isNotBlank() &&
@@ -50,7 +51,7 @@ class AccessibilityAppOperationLiveBridge(
             }
 
             val selectorLabel = materialize(step.selectorHint, request.input)
-            val target = uniqueVisibleNode(root, selectorLabel) ?: recoverAndFindTarget(
+            val target = findStepTarget(root, selectorLabel, step) ?: recoverAndFindTarget(
                 request = request,
                 step = step,
                 root = root,
@@ -114,7 +115,7 @@ class AccessibilityAppOperationLiveBridge(
             return needsHandoff(request, "foreground_launch_pending:${request.packageName}")
         }
         foregroundLaunchAttempted.add(request.id)
-        val launch = foregroundLauncher.bringToForeground(request.packageName)
+        val launch = foregroundLauncher.bringToForeground(request.packageName, request)
         return when (launch.status) {
             AppForegroundLaunchStatus.ALREADY_FOREGROUND -> {
                 auditLedger.record("operator.live_foreground_verified", "${request.id}:${request.packageName}")
@@ -177,6 +178,46 @@ class AccessibilityAppOperationLiveBridge(
         return matches.singleOrNull()
     }
 
+    private fun findStepTarget(
+        root: AccessibilityNodeInfo,
+        selectorLabel: String,
+        step: AppOperationStep
+    ): AccessibilityNodeInfo? {
+        uniqueVisibleNode(root, selectorLabel)?.let { return it }
+        // OEM compose/search fields often lack the human-readable labels used in playbooks.
+        if (step.operation == "set_text" || looksLikeInputSelector(selectorLabel)) {
+            uniqueEditableNode(root)?.let { return it }
+        }
+        return null
+    }
+
+    private fun looksLikeInputSelector(label: String): Boolean {
+        val normalized = label.lowercase()
+        return normalized.contains("input field") ||
+            normalized.contains("message input") ||
+            normalized.contains("compose") ||
+            normalized.contains("search box") ||
+            normalized.contains("text field") ||
+            normalized.contains("omnibox")
+    }
+
+    private fun uniqueEditableNode(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        val found = mutableListOf<AccessibilityNodeInfo>()
+        fun walk(node: AccessibilityNodeInfo) {
+            val supportsSetText = node.actionList.any {
+                it.id == AccessibilityNodeInfo.ACTION_SET_TEXT
+            }
+            if ((node.isEditable || supportsSetText) && node.isVisibleToUser && node.isEnabled) {
+                found.add(node)
+            }
+            for (index in 0 until node.childCount) {
+                node.getChild(index)?.let(::walk)
+            }
+        }
+        walk(root)
+        return found.singleOrNull()
+    }
+
     private fun performStepAction(
         target: AccessibilityNodeInfo,
         step: AppOperationStep,
@@ -230,7 +271,7 @@ class AccessibilityAppOperationLiveBridge(
             ?: return null.also {
                 auditLedger.record("operator.live_recovery_failed", "${request.id}:${step.id}:active_window_missing_after_recovery")
             }
-        val recoveredTarget = uniqueVisibleNode(recoveredRoot, selectorLabel)
+        val recoveredTarget = findStepTarget(recoveredRoot, selectorLabel, step)
         if (recoveredTarget == null) {
             auditLedger.record("operator.live_recovery_handoff", "${request.id}:${step.id}:$selectorLabel")
         } else {

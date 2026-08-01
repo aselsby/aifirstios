@@ -1,5 +1,6 @@
 package app.conductor.operator.accessibility
 
+import android.util.Log
 import app.conductor.audit.AuditLedger
 import app.conductor.runtime.AutonomyMode
 import app.conductor.runtime.SystemClock
@@ -272,11 +273,12 @@ class AppOperationExecutor(
         if (liveResult.status == AppOperationStatus.NEEDS_HANDOFF) {
             // Start the target surface from the activity process (not only a11y service),
             // so background-activity restrictions do not block G4/live demos.
-            val launch = foregroundLauncher.bringToForeground(request.packageName)
+            val launch = foregroundLauncher.bringToForeground(request.packageName, request)
             auditLedger.record(
                 "operator.foreground_assist",
                 "${request.id}:${launch.status}:${launch.detail}"
             )
+            Log.i("ConductorOS", "operator.foreground_assist ${request.id}:${launch.status}:${launch.detail}")
             return queueForUserAction(
                 request = request,
                 reason = "Live app operation needs foreground app verification: ${liveResult.detail}",

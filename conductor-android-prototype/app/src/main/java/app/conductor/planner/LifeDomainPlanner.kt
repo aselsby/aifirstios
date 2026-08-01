@@ -369,6 +369,8 @@ class LifeDomainPlanner(private val auditLedger: AuditLedger) {
 
     private fun extractRecipient(utterance: String): String {
         val patterns = listOf(
+            // Phone numbers for OEM Messages draft (smsto deep link).
+            Regex("""(?:to|call|text|message|sms)\s+(\+?\d[\d\-\s]{3,}\d)""", RegexOption.IGNORE_CASE),
             Regex("""(?:to|call|text|message|email|pay)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)"""),
             Regex("""(?:to|call|text|message|email|pay)\s+([a-zA-Z]+)""", RegexOption.IGNORE_CASE)
         )
