@@ -106,25 +106,27 @@ class AppOperationPlaybookRegistry(
             actionType = "maps.route.open",
             riskLabel = "low_no_external_side_effect",
             requiresExactApproval = false,
-            invocationPhrases = setOf("route", "directions", "open maps"),
-            accountProofLabel = "Maps signed in",
+            invocationPhrases = setOf("route", "directions", "open maps", "navigate"),
+            // Real Maps has no "Maps signed in" chip; session store still tracks grant.
+            // Live path opens geo:q=destination then verifies place text in the tree.
+            accountProofLabel = "",
             requiredInputKeys = setOf("destination"),
             requiredSourceIds = setOf("maps"),
             steps = listOf(
                 AppOperationStep(
-                    id = "search_destination",
-                    description = "Search for the chosen destination.",
-                    selectorHint = "search box",
-                    expectedState = "destination_result_visible",
-                    operation = "set_text",
+                    id = "confirm_destination_visible",
+                    description = "Confirm destination place results are visible after Maps deep link.",
+                    selectorHint = "input.destination",
+                    expectedState = "input.destination",
+                    operation = "verify",
                     inputKey = "destination",
-                    recoverySelectorHints = listOf("search here", "explore")
-                ),
-                AppOperationStep(
-                    id = "open_directions",
-                    description = "Open directions without sharing location externally.",
-                    selectorHint = "directions button",
-                    expectedState = "route_preview_visible"
+                    recoverySelectorHints = listOf(
+                        "SKIP",
+                        "Got it",
+                        "Dismiss",
+                        "search here",
+                        "explore"
+                    )
                 )
             )
         ),

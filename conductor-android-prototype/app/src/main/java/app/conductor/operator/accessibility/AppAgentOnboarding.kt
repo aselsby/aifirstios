@@ -163,7 +163,7 @@ class AppAgentOnboarding(
         if (playbook.requiredInputKeys.isEmpty()) errors += "missing_required_inputs"
         if (playbook.steps.isEmpty()) errors += "missing_steps"
         playbook.steps.forEach { step ->
-            if (!setOf("auto", "click", "set_text").contains(step.operation)) {
+            if (!setOf("auto", "click", "set_text", "verify").contains(step.operation)) {
                 errors += "unsupported_step_operation:${step.id}:${step.operation}"
             }
             if (step.operation == "set_text" && step.inputKey.isBlank()) {

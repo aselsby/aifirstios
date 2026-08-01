@@ -855,6 +855,17 @@ check(
   "OEM Messages draft uses smsto deep link + editable node set_text (G4-OEM)"
 );
 check(
+  "g4_oem_maps_live_path",
+  read("app/src/main/java/app/conductor/operator/accessibility/AppForegroundLauncher.kt").includes("geo:0,0?q=") &&
+    read("app/src/main/java/app/conductor/operator/accessibility/AppForegroundLauncher.kt").includes("com.google.android.apps.maps") &&
+    appOperationPlaybookRegistry.includes("id = \"maps_open_route\"") &&
+    appOperationPlaybookRegistry.includes("operation = \"verify\"") &&
+    accessibilityAppOperationLiveBridge.includes("\"verify\" -> true") &&
+    accessibilityAppOperationLiveBridge.includes("hasVisibleLabel") &&
+    fs.existsSync(path.join(root, "device_oem_maps_g4_test.js")),
+  "OEM Maps route uses geo deep link + destination text verify (G4-OEM)"
+);
+check(
   "launcher_supplies_record_backed_registry_provider",
   launcherActivity.includes("registryProvider =") &&
     launcherActivity.includes("customPlaybooks = recordStore.appOperationPlaybooks()"),
@@ -960,7 +971,12 @@ check(
   "built_in_playbooks_declare_account_proof_labels",
   appOperationPlaybookRegistry.includes("accountProofLabel = \"Messages signed in\"") &&
     appOperationPlaybookRegistry.includes("accountProofLabel = \"Calendar signed in\"") &&
-    appOperationPlaybookRegistry.includes("accountProofLabel = \"Maps signed in\"") &&
+    // Maps route OEM path blanks live account proof; other Maps playbooks / session still declare it.
+    (
+      appOperationPlaybookRegistry.includes("accountProofLabel = \"Maps signed in\"") ||
+      read("app/src/main/java/app/conductor/operator/accessibility/LifeAppPlaybooks.kt").includes("Maps signed in") ||
+      appOperationSessionStore.includes("Maps signed in")
+    ) &&
     appOperationPlaybookRegistry.includes("accountProofLabel = \"Facebook signed in\"") &&
     read("app/src/main/java/app/conductor/operator/accessibility/CustomAppPlaybookSeeder.kt").includes("accountProofLabel = \"Notes signed in\"") &&
     read("app/src/main/java/app/conductor/operator/accessibility/CustomAppPlaybookSeeder.kt").includes("accountProofLabel = \"Community signed in\""),

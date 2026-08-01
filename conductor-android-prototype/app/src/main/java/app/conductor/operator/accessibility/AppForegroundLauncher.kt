@@ -93,13 +93,17 @@ class AndroidAppForegroundLauncher(
                 // Leave body empty so live set_text is what proves accessibility control.
             }
         }
-        // Maps: open search for destination when provided.
+        // Maps: open place search for destination/query (G4-OEM). geo: shows place sheet
+        // with destination text visible for accessibility post-state verification.
         if (packageName == "com.google.android.apps.maps") {
-            val destination = request?.input?.get("destination").orEmpty().trim()
-            if (destination.isNotBlank()) {
+            val place = sequenceOf("destination", "query")
+                .mapNotNull { key -> request?.input?.get(key)?.trim()?.takeIf { it.isNotBlank() } }
+                .firstOrNull()
+                .orEmpty()
+            if (place.isNotBlank()) {
                 return Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("geo:0,0?q=${Uri.encode(destination)}")
+                    Uri.parse("geo:0,0?q=${Uri.encode(place)}")
                 ).apply {
                     setPackage(packageName)
                 }

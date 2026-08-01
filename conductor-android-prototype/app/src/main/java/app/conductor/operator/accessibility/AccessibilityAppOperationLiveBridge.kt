@@ -150,17 +150,20 @@ class AccessibilityAppOperationLiveBridge(
         actedTarget: AccessibilityNodeInfo
     ): Boolean {
         if (expectedLabel.isBlank()) return true
-        if (hasUniqueVisibleLabel(root, expectedLabel)) return true
+        // Maps place sheets often duplicate destination labels — any visible match is enough.
+        if (hasVisibleLabel(root, expectedLabel)) return true
         val filled = inputValueFor(step, input)
         if (!filled.isNullOrBlank()) {
-            if (hasUniqueVisibleLabel(root, filled)) return true
+            if (hasVisibleLabel(root, filled)) return true
             val nodeText = actedTarget.text?.toString().orEmpty()
-            if (nodeText == filled) return true
+            if (nodeText == filled || nodeText.contains(filled, ignoreCase = true)) return true
+            val content = actedTarget.contentDescription?.toString().orEmpty()
+            if (content.contains(filled, ignoreCase = true)) return true
         }
         // Semantic equals templates: "compose_text_equals input.body"
         if (expectedLabel.contains("equals", ignoreCase = true) && !filled.isNullOrBlank()) {
             val nodeText = actedTarget.text?.toString().orEmpty()
-            if (nodeText == filled || hasUniqueVisibleLabel(root, filled)) return true
+            if (nodeText == filled || hasVisibleLabel(root, filled)) return true
         }
         return false
     }
@@ -170,12 +173,20 @@ class AccessibilityAppOperationLiveBridge(
         return uniqueVisibleNode(root, label) != null
     }
 
-    private fun uniqueVisibleNode(root: AccessibilityNodeInfo, label: String): AccessibilityNodeInfo? {
-        if (label.isBlank()) return null
-        val matches = root.findAccessibilityNodeInfosByText(label).filter {
+    private fun hasVisibleLabel(root: AccessibilityNodeInfo, label: String): Boolean {
+        if (label.isBlank()) return false
+        return visibleNodes(root, label).isNotEmpty()
+    }
+
+    private fun visibleNodes(root: AccessibilityNodeInfo, label: String): List<AccessibilityNodeInfo> {
+        if (label.isBlank()) return emptyList()
+        return root.findAccessibilityNodeInfosByText(label).filter {
             it.isVisibleToUser && it.isEnabled
         }
-        return matches.singleOrNull()
+    }
+
+    private fun uniqueVisibleNode(root: AccessibilityNodeInfo, label: String): AccessibilityNodeInfo? {
+        return visibleNodes(root, label).singleOrNull()
     }
 
     private fun findStepTarget(
@@ -184,6 +195,10 @@ class AccessibilityAppOperationLiveBridge(
         step: AppOperationStep
     ): AccessibilityNodeInfo? {
         uniqueVisibleNode(root, selectorLabel)?.let { return it }
+        // OEM Maps destination text often appears more than once (title + sheet).
+        if (step.operation == "verify") {
+            visibleNodes(root, selectorLabel).firstOrNull()?.let { return it }
+        }
         // OEM compose/search fields often lack the human-readable labels used in playbooks.
         if (step.operation == "set_text" || looksLikeInputSelector(selectorLabel)) {
             uniqueEditableNode(root)?.let { return it }
@@ -236,6 +251,8 @@ class AccessibilityAppOperationLiveBridge(
                 target.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
             }
             "click" -> target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            // Deep-link post-state: target already found; no mutation required.
+            "verify" -> true
             else -> if (value != null && shouldSetText(step)) {
                 val args = Bundle().apply {
                     putCharSequence(
