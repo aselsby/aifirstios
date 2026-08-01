@@ -820,11 +820,13 @@ check(
     read("app/src/main/java/app/conductor/operator/accessibility/LifeAppPlaybooks.kt").includes("conductor_demo_live_draft") &&
     read("app/src/main/java/app/conductor/operator/accessibility/LifeAppPlaybooks.kt").includes("demo.app.draft") &&
     read("app/src/main/java/app/conductor/operator/accessibility/AppForegroundLauncher.kt").includes("ConductorAgentDemoActivity") &&
-    accessibilityAppOperationLiveBridge.includes("operator.live_account_proof_relaunch") &&
+    accessibilityAppOperationLiveBridge.includes("launchOnce") &&
     accessibilityAppOperationLiveBridge.includes("verifyExpected") &&
+    accessibilityAppOperationLiveBridge.includes("foregroundLaunchAttempted") &&
     manifest.includes("ConductorAgentDemoActivity") &&
     toolRegistry.includes("demo.app.draft") &&
-    conductorRuntime.includes("life_demo"),
+    conductorRuntime.includes("life_demo") &&
+    launcherActivity.includes("AndroidAppForegroundLauncher"),
   "controlled demo surface enables live accessibility tree verification (G4)"
 );
 check(
@@ -902,11 +904,13 @@ check(
     accessibilityAppOperationLiveBridge.includes("operator.live_verified") &&
     appForegroundLauncher.includes("interface AppForegroundLauncher") &&
     appForegroundLauncher.includes("class AndroidAppForegroundLauncher") &&
-    appForegroundLauncher.includes("context.packageManager.getLaunchIntentForPackage(packageName)") &&
+    appForegroundLauncher.includes("getLaunchIntentForPackage") &&
     appForegroundLauncher.includes("Intent.FLAG_ACTIVITY_NEW_TASK") &&
     appForegroundLauncher.includes("context.startActivity(intent)") &&
+    appForegroundLauncher.includes("ConductorAgentDemoActivity") &&
     accessibilityService.includes("AccessibilityAppOperationLiveBridge") &&
-    accessibilityService.includes("activeRootProvider = { rootInActiveWindow }") &&
+    accessibilityService.includes("activeRootProvider = { resolveActiveRoot() }") &&
+    accessibilityService.includes("drainQueuedOperations") &&
     accessibilityService.includes("private var activePackageName: String? = null") &&
     accessibilityService.includes("activePackageName = packageName") &&
     accessibilityService.includes("activePackageProvider = { activePackageName }") &&
