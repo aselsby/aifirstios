@@ -8,6 +8,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const args = new Set(process.argv.slice(2));
 const jsOnly = args.has("--js-only");
 const androidStaticOnly = args.has("--android-static-only");
+// CI / PR gates: JS packages + Android static source/config checks only.
+// Skips device_smoke (needs adb/device/APK) and full local device loops.
+const ciMode = args.has("--ci") || process.env.CI === "true";
+const skipDevice = args.has("--no-device") || ciMode;
 
 const jsPackages = [
   "conductor-action-sdk",
@@ -54,7 +58,13 @@ if (!jsOnly) {
     run(`node ${script}`, androidRoot, `android:${script}`);
   }
   run("node native_preflight.js", androidRoot, "android:native_preflight.js");
-  run("node device_smoke_test.js", androidRoot, "android:device_smoke_test.js");
+  if (!skipDevice) {
+    run("node device_smoke_test.js", androidRoot, "android:device_smoke_test.js");
+  } else {
+    console.log(
+      "\n===== android:device_smoke_test.js =====\nSKIPPED (CI/static mode: no device dependency). Use local `npm test` without --ci for device smoke."
+    );
+  }
 }
 
 console.log("\nConductor verify-all completed.");

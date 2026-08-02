@@ -9,7 +9,8 @@
   "scripts": {
     "test": "node scripts/verify-all.mjs",
     "test:js": "node scripts/verify-all.mjs --js-only",
-    "test:android-static": "node scripts/verify-all.mjs --android-static-only",
+    "test:android-static": "node scripts/verify-all.mjs --android-static-only --no-device",
+    "test:ci": "node scripts/verify-all.mjs --ci",
     "verify": "node scripts/verify-all.mjs"
   }
 }

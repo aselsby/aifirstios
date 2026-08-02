@@ -30,7 +30,11 @@ Conductor:
 ### Install & verify (all packages + static gates)
 
 ```bash
+# Full local verify (includes optional device smoke when adb/device available)
 npm test
+
+# PR/CI-equivalent gates (JS packages + Android static checks; no device)
+npm run test:ci
 ```
 
 ### Build the Android debug APK
