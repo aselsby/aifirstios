@@ -13,10 +13,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Verify packages and Android static gates
-        run: npm test
+      - name: Verify JS packages and Android static gates (no device)
+        run: npm run test:ci
         env:
-          # native preflight/device smoke exit 0 when blocked
+          # Enables --ci path in verify-all (skips device_smoke; assemble job covers APK)
           CI: "true"
 
   android-assemble:
